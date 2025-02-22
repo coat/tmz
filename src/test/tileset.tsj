@@ -1,0 +1,66 @@
+{ "backgroundcolor":"#ffaaff",
+ "columns":37,
+ "image":"..\/..\/..\/stxy\/src\/tiles.png",
+ "imageheight":448,
+ "imagewidth":592,
+ "margin":0,
+ "name":"tiles",
+ "properties": [
+    {
+        "name": "custom",
+        "propertytype": "",
+        "type": "int",
+        "value": 50 
+    }
+ ],
+ "spacing":0,
+ "tilecount":1036,
+ "tiledversion":"1.11.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "transformations":
+    {
+     "hflip":true,
+     "preferuntransformed":true,
+     "rotate":false,
+     "vflip":true
+    },
+ "type":"tileset",
+ "version":"1.10",
+ "wangsets":[
+        {
+         "colors":[
+                {
+                 "color":"#ff0000",
+                 "name":"Dirt",
+                 "probability":1,
+                 "tile":892
+                }, 
+                {
+                 "color":"#00ff00",
+                 "name":"Grass",
+                 "probability":1,
+                 "tile":888
+                }],
+         "name":"Ground",
+         "tile":1002,
+         "type":"mixed",
+         "wangtiles":[
+                {
+                 "tileid":888,
+                 "wangid":[2, 2, 2, 2, 2, 2, 2, 2]
+                }, 
+                {
+                 "tileid":889,
+                 "wangid":[2, 2, 2, 2, 2, 2, 2, 2]
+                }, 
+                {
+                 "tileid":892,
+                 "wangid":[1, 1, 1, 1, 1, 1, 1, 1]
+                }, 
+                {
+                 "tileid":1018,
+                 "wangid":[2, 2, 2, 2, 2, 2, 2, 2]
+                }]
+        }]
+}

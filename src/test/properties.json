@@ -1,0 +1,26 @@
+[
+  {
+    "name": "name",
+    "propertytype": "",
+    "type": "string",
+    "value": "game"
+  },
+  {
+    "name": "width",
+    "propertytype": "",
+    "type": "int",
+    "value": 640
+  },
+  {
+    "name": "scale",
+    "propertytype": "",
+    "type": "float",
+    "value": 1.5
+  },
+  {
+    "name": "bg",
+    "propertytype": "",
+    "type": "color",
+    "value": "#ffa0b0c0"
+  }
+]
