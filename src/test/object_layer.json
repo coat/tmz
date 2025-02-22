@@ -1,0 +1,32 @@
+{
+  "draworder": "topdown",
+  "id": 2,
+  "name": "Object Layer 1",
+  "objects": [
+    {
+      "height": 19,
+      "id": 1,
+      "name": "",
+      "rotation": 0,
+      "text": {
+        "text": "Hello World",
+        "wrap": true
+      },
+      "type": "",
+      "visible": true,
+      "width": 91.4375,
+      "x": 70,
+      "y": 44.6353383458647
+    }
+  ],
+  "opacity": 1,
+  "properties":[{
+      "name":"custom",
+      "type":"int",
+      "value":50
+  }],
+  "type": "objectgroup",
+  "visible": true,
+  "x": 0,
+  "y": 0
+}
