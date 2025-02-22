@@ -85,10 +85,6 @@ const map = try tmz.loadMap(allocator, @embedFile("map.tmj"));
 defer map.deinit(allocator);
 
 std.debug.info("Map size: {} x {}", .{ map.width, map.height });
-
-while (layers.next()) |layer| {
-    lay
-}
 ```
 
 `loadMap` and `loadMapFromFile` expect a [JSON Map Format (.tmj)](https://doc.mapeditor.org/en/stable/reference/json-map-format/#map).
