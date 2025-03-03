@@ -1,0 +1,32 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": ".",
+    "folders": [
+        "."
+    ],
+    "properties": [
+        {
+            "name": "height",
+            "propertytype": "",
+            "type": "int",
+            "value": 480
+        },
+        {
+            "name": "name",
+            "propertytype": "",
+            "type": "string",
+            "value": "game"
+        },
+        {
+            "name": "width",
+            "propertytype": "",
+            "type": "int",
+            "value": 640
+        }
+    ],
+    "propertyTypes": [
+    ]
+}

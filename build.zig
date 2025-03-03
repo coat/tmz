@@ -13,8 +13,20 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
     b.installArtifact(tmz);
+
+    const game = b.addExecutable(.{
+        .name = "foo",
+        .root_source_file = b.path("examples/game/game.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    game.root_module.addImport("tmz", b.modules.get("tmz").?);
+    b.installArtifact(game);
+    const run_cmd = b.addRunArtifact(game);
+    run_cmd.step.dependOn(b.getInstallStep());
+    const run_step = b.step("run", "Run the example game");
+    run_step.dependOn(&run_cmd.step);
 
     const unit_tests = b.addTest(.{
         .root_source_file = b.path("src/tmz.zig"),
