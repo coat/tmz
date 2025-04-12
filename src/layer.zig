@@ -26,8 +26,6 @@ pub const ObjectGroup = struct {
         };
         if (json_layer.objects) |json_objects| {
             for (json_objects) |json_object| {
-                // var object = json_object;
-                // if (json_object.type) |object_type| object.type = try allocator.dupe(u8, object_type);
                 const object = try Object.fromJson(allocator, json_object);
                 try object_group.objects.append(allocator, object);
             }
@@ -43,12 +41,21 @@ pub const ObjectGroup = struct {
         self.objects.deinit(allocator);
     }
 
-    pub fn findByClass(self: ObjectGroup, class: []const u8) ?Object {
+    pub fn getByClass(self: ObjectGroup, class: []const u8) ?Object {
         for (self.objects.items) |object| {
             if (object.class) |object_class| {
                 if (std.mem.eql(u8, object_class, class)) {
                     return object;
                 }
+            }
+        }
+        return null;
+    }
+
+    pub fn get(self: ObjectGroup, name: []const u8) ?Object {
+        for (self.objects.items) |object| {
+            if (std.mem.eql(u8, object.name, name)) {
+                return object;
             }
         }
         return null;
@@ -243,14 +250,11 @@ pub const Chunk = struct {
         var chunk = try jsonParser(@This(), allocator, source, options);
 
         if (source.object.get("data")) |data| {
-            switch (data) {
-                .array => {
-                    chunk.data = .{ .csv = try std.json.parseFromValueLeaky([]const u32, allocator, data, options) };
-                },
-                .string => {
-                    chunk.data = .{ .base64 = try std.json.parseFromValueLeaky([]const u8, allocator, data, options) };
-                },
-                else => return error.UnexpectedToken,
+            if (data == .array) {
+                chunk.data = .{ .csv = try std.json.parseFromValueLeaky([]const u32, allocator, data, options) };
+            }
+            if (data == .string) {
+                chunk.data = .{ .base64 = try std.json.parseFromValueLeaky([]const u8, allocator, data, options) };
             }
         }
         return chunk;
@@ -426,7 +430,7 @@ fn decompress(allocator: Allocator, compressed: []const u8, size: usize, compres
 
             return decompressed;
         },
-        .none => unreachable,
+        .none => return allocator.dupe(u8, compressed) catch @panic("OOM"),
     };
 }
 
@@ -439,15 +443,31 @@ test "Layer" {
     defer parsed_layer.deinit();
     const managed_layer = try std.json.parseFromValue(Layer.JsonLayer, allocator, parsed_layer.value, .{ .ignore_unknown_fields = true });
     defer managed_layer.deinit();
-    const layer = managed_layer.value;
+    const json_layer = managed_layer.value;
 
-    const properties = layer.properties.?;
+    const properties = json_layer.properties.?;
     var iterator = properties.iterator();
     while (iterator.next()) |entry| {
         try std.testing.expectEqualStrings("custom", entry.value_ptr.name);
     }
 
-    try expectEqual(Layer.JsonLayer.DrawOrder.topdown, layer.draw_order);
+    try expectEqual(Layer.JsonLayer.DrawOrder.topdown, json_layer.draw_order);
+
+    var layer = try Layer.fromJson(allocator, json_layer);
+    defer layer.deinit(allocator);
+
+    const object_group = layer.content.object_group;
+
+    try expectEqual(5, object_group.objects.items.len);
+    {
+        const object = object_group.getByClass("hello").?;
+        try expectEqual(1, object.id);
+    }
+
+    {
+        const object = object_group.get("polygon").?;
+        try expectEqual(8, object.id);
+    }
 }
 
 const Property = @import("property.zig").Property;

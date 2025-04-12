@@ -1,0 +1,41 @@
+{ "compressionlevel":-1,
+ "height":5,
+ "infinite":false,
+ "layers":[
+        {
+         "class":"bar",
+         "data":[10, 15, 5, 3221225478, 1073741830,
+            5, 5, 5, 2147483654, 6,
+            3221225475, 1073741827, 5, 5, 5,
+            2147483651, 3, 5, 15, 16,
+            5, 5, 5, 16, 11],
+         "height":5,
+         "id":1,
+         "name":"base64-ground",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":5,
+         "x":0,
+         "y":0
+        }],
+ "nextlayerid":2,
+ "nextobjectid":1,
+ "orientation":"orthogonal",
+ "renderorder":"right-down",
+ "tiledversion":"1.10.2",
+ "tileheight":8,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "source":"src\/test\/source_tileset.tsj"
+        }, 
+        {
+         "firstgid":1037,
+         "source":"src\/test\/images_tileset.tsj"
+        }],
+ "tilewidth":8,
+ "type":"map",
+ "version":"1.10",
+ "width":5
+}

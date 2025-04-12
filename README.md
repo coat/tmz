@@ -42,7 +42,7 @@ exe.root_module.addImport("tmz", tmz.module("tmz"));
 
 ## Usage
 
-### Maps (TODO)
+### Maps
 
 ```zig
 const map = try tmz.Map.initFromFile(allocator, "map.tmj");
