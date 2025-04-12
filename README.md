@@ -78,7 +78,7 @@ If you are using the C API to tmz, see the Build section below.
 
 ## Usage
 
-### Maps (TODO)
+### Maps
 
 ```zig
 const map = try tmz.loadMap(allocator, @embedFile("map.tmj"));

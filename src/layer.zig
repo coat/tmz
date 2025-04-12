@@ -1,9 +1,26 @@
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#layer
 pub const Layer = struct {
+    /// `tilelayer` only.
+    chunks: ?[]Chunk = null,
+    class: ?[]const u8 = null,
+    /// `tilelayer` only.
+    compression: ?Compression = null,
+    /// Array of unsigned int (GIDs)
+    /// `tilelayer` only.
+    data: ?[]u32 = null,
     /// `objectgroup` only.
     draw_order: ?DrawOrder = .topdown,
+    /// `tilelayer` only.
+    encoding: ?Encoding = .csv,
+    /// Row count. Same as map height for fixed-size maps.
+    /// `tilelayer` only.
+    height: ?u32 = null,
     /// Incremental ID - unique across all layers
     id: u32,
+    /// `imagelayer` only
+    image: ?[]const u8 = null,
+    /// `group` only
+    layers: ?[]Layer = null,
     /// Whether layer is locked in the editor
     locked: bool = false,
     name: []const u8,
@@ -27,8 +44,13 @@ pub const Layer = struct {
     start_y: ?i32 = null,
     /// Hex-formatted tint color (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers
     tint_color: ?[]const u8 = null,
+    /// `imagelayer` only
+    transparent_color: ?[]const u8 = null,
     type: Type,
     visible: bool,
+    /// Column count. Same as map width for fixed-size maps.
+    /// `tilelayer` only.
+    width: ?u32 = null,
     /// Horizontal layer offset in tiles. Always 0.
     x: i32 = 0,
     /// Vertical layer offset in tiles. Always 0.
@@ -37,6 +59,28 @@ pub const Layer = struct {
     pub const DrawOrder = enum { topdown, index };
     pub const Encoding = enum { csv, base64 };
     pub const Type = enum { tilelayer, objectgroup, imagelayer, group };
+
+    pub const Compression = enum {
+        none,
+        zlib,
+        gzip,
+        zstd,
+
+        pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
+            _ = allocator;
+            _ = options;
+            return switch (source) {
+                .string, .number_string => |value| cmp: {
+                    if (value.len == 0) {
+                        break :cmp .none;
+                    } else {
+                        break :cmp std.meta.stringToEnum(Compression, value) orelse .none;
+                    }
+                },
+                else => .none,
+            };
+        }
+    };
 
     pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
         var layer = try jsonParser(@This(), allocator, source, options);
@@ -49,7 +93,59 @@ pub const Layer = struct {
             }
         }
 
+        if (layer.type == .tilelayer) {
+            if (layer.chunks) |chunks| {
+                for (chunks) |*chunk| {
+                    const chunk_size: usize = chunk.width * chunk.height;
+                    if (layer.encoding == .base64) {
+                        chunk.data = .{ .csv = parseBase64Data(allocator, chunk.data.base64, chunk_size, layer.compression orelse .none) };
+                    }
+                }
+            }
+            if (source.object.get("data")) |data| {
+                if (layer.encoding == .csv) {
+                    layer.data = try std.json.parseFromValueLeaky([]u32, allocator, data, options);
+                } else {
+                    const base64_data = try std.json.parseFromValueLeaky([]const u8, allocator, data, options);
+                    const layer_size: usize = (layer.width orelse 0) * (layer.height orelse 0);
+
+                    layer.data = parseBase64Data(allocator, base64_data, layer_size, layer.compression orelse .none);
+                }
+            }
+        }
         return layer;
+    }
+};
+
+/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#chunk
+pub const Chunk = struct {
+    /// Array of unsigned int (GIDs) or base64-encoded data
+    data: EncodedData,
+    height: u32,
+    width: u32,
+    x: u32,
+    y: u32,
+
+    const EncodedData = union(Layer.Encoding) {
+        csv: []const u32,
+        base64: []const u8,
+    };
+
+    pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
+        var chunk = try jsonParser(@This(), allocator, source, options);
+
+        if (source.object.get("data")) |data| {
+            switch (data) {
+                .array => {
+                    chunk.data = .{ .csv = try std.json.parseFromValueLeaky([]const u32, allocator, data, options) };
+                },
+                .string => {
+                    chunk.data = .{ .base64 = try std.json.parseFromValueLeaky([]const u8, allocator, data, options) };
+                },
+                else => return error.UnexpectedToken,
+            }
+        }
+        return chunk;
     }
 };
 
@@ -100,6 +196,61 @@ pub const Text = struct {
     }
 };
 
+// Decode base64 data (and optionally decompress) into a slice of u32 Global Tile Ids allocated on the heap, caller owns slice
+fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Layer.Compression) []u32 {
+    const decoded_size = base64_decoder.calcSizeForSlice(base64_data) catch @panic("Unable to decode base64 data");
+    var decoded = allocator.alloc(u8, decoded_size) catch @panic("OOM");
+    defer allocator.free(decoded);
+
+    base64_decoder.decode(decoded, base64_data) catch @panic("Unable to decode base64 data");
+
+    const data = allocator.alloc(u32, size) catch @panic("OOM");
+
+    const alignment = @alignOf(u32);
+
+    if (compression != .none)
+        decoded = decompress(allocator, decoded, size, compression);
+
+    if (size * alignment != decoded.len)
+        @panic("data size does not match Layer dimensions");
+
+    for (data, 0..) |*tile, i| {
+        const tile_index = i * alignment;
+        const end = tile_index + alignment;
+        tile.* = std.mem.readInt(u32, decoded[tile_index..end][0..alignment], .little);
+    }
+
+    return data;
+}
+
+// caller owns returned slice
+fn decompress(allocator: Allocator, compressed: []const u8, size: usize, compression: Layer.Compression) []u8 {
+    const decompressed = allocator.alloc(u8, size * @alignOf(u32)) catch @panic("OOM");
+    var decompressed_buf = std.io.fixedBufferStream(decompressed);
+    var compressed_buf = std.io.fixedBufferStream(compressed);
+
+    return switch (compression) {
+        .gzip => {
+            std.compress.gzip.decompress(compressed_buf.reader(), decompressed_buf.writer()) catch @panic("Unable to decompress gzip");
+            return decompressed;
+        },
+        .zlib => {
+            std.compress.zlib.decompress(compressed_buf.reader(), decompressed_buf.writer()) catch @panic("Unable to decompress zlib");
+            return decompressed;
+        },
+        .zstd => {
+            const window_buffer = allocator.alloc(u8, std.compress.zstd.DecompressorOptions.default_window_buffer_len) catch @panic("OOM");
+            defer allocator.free(window_buffer);
+
+            var zstd_stream = std.compress.zstd.decompressor(compressed_buf.reader(), .{ .window_buffer = window_buffer });
+            _ = zstd_stream.reader().readAll(decompressed) catch @panic("Unable to decompress zstd");
+
+            return decompressed;
+        },
+        .none => unreachable,
+    };
+}
+
 test "Layer" {
     const allocator = std.testing.allocator;
 
@@ -124,6 +275,7 @@ const Property = @import("property.zig").Property;
 const jsonParser = @import("tmz.zig").jsonParser;
 
 const std = @import("std");
+const base64_decoder = std.base64.standard.Decoder;
 const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;
 const Allocator = std.mem.Allocator;

@@ -1,6 +1,10 @@
+pub const Map = map.Map;
 pub const Tileset = tileset.Tileset;
 pub const Property = @import("property.zig").Property;
+pub const Layer = @import("layer.zig").Layer;
 
+pub const loadMap = map.load;
+pub const loadMapFromFile = map.loadFromFile;
 pub const loadTileset = tileset.load;
 pub const loadTilesetFromFile = tileset.loadFromFile;
 
@@ -150,4 +154,5 @@ const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;
 const Allocator = std.mem.Allocator;
 
+const map = @import("map.zig");
 const tileset = @import("tileset.zig");
