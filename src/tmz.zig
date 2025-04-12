@@ -1,9 +1,18 @@
-pub const Property = @import("property.zig").Property;
+pub const Map = map.Map;
+pub const loadMapFromSlice = Map.initFromSlice;
+pub const loadMapFromFile = Map.initFromFile;
 
 pub const Tileset = tileset.Tileset;
 pub const Tile = tileset.Tile;
 pub const loadTilesetFromSlice = Tileset.initFromSlice;
 pub const loadTilesetFromFile = Tileset.initFromFile;
+
+pub const Layer = layer.Layer;
+pub const TileLayer = layer.TileLayer;
+pub const Object = layer.Object;
+pub const ObjectGroup = layer.ObjectGroup;
+
+pub const Property = @import("property.zig").Property;
 
 pub const Color = packed struct(u32) {
     a: u8 = 0,
@@ -137,5 +146,6 @@ const Allocator = std.mem.Allocator;
 const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;
 
+const map = @import("map.zig");
 const tileset = @import("tileset.zig");
 const layer = @import("layer.zig");
