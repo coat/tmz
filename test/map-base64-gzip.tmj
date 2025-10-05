@@ -77,11 +77,11 @@
  "tilesets":[
         {
          "firstgid":1,
-         "source":"test/source_tileset.tsj"
+         "source":"source_tileset.tsj"
         }, 
         {
          "firstgid":5,
-         "source":"test/images_tileset.tsj"
+         "source":"images_tileset.tsj"
         }],
  "tilewidth":16,
  "type":"map",

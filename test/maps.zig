@@ -1,4 +1,6 @@
 test "initFromSlice" {
+    try changeTestDir();
+
     const test_map = @embedFile("map.tmj");
 
     const allocator = std.testing.allocator;
@@ -10,14 +12,16 @@ test "initFromSlice" {
 }
 
 test "initFromFile" {
+    try changeTestDir();
+
     const allocator = std.testing.allocator;
 
     const test_maps = [_][]const u8{
-        "test/map.tmj",
-        "test/map-base64-none.tmj",
-        "test/map-base64-gzip.tmj",
-        "test/map-base64-zlib.tmj",
-        "test/map-base64-zstd.tmj",
+        "map.tmj",
+        "map-base64-none.tmj",
+        "map-base64-gzip.tmj",
+        "map-base64-zlib.tmj",
+        "map-base64-zstd.tmj",
     };
 
     for (test_maps) |test_map| {
@@ -38,11 +42,13 @@ fn regularMapTests(map: Map) !void {
 }
 
 test "infinite maps" {
+    try changeTestDir();
+
     const allocator = std.testing.allocator;
 
     const test_maps = [_][]const u8{
-        "test/map-infinite-csv.tmj",
-        "test/map-infinite-base64-zstd.tmj",
+        "map-infinite-csv.tmj",
+        "map-infinite-base64-zstd.tmj",
     };
 
     for (test_maps) |test_map| {
@@ -102,6 +108,8 @@ fn baseTests(map: Map) !void {
 }
 
 test "findObject" {
+    try changeTestDir();
+
     const allocator = std.testing.allocator;
     const test_map = @embedFile("map.tmj");
 
@@ -118,6 +126,8 @@ test "findObject" {
 
 const tmz = @import("tmz");
 const Map = tmz.Map;
+
+const changeTestDir = @import("tests.zig").changeTestDir;
 
 const std = @import("std");
 const expectEqualDeep = std.testing.expectEqualDeep;

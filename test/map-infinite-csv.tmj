@@ -118,7 +118,7 @@
  "tilesets":[
         {
          "firstgid":1,
-         "source":"test/source_tileset.tsj"
+         "source":"source_tileset.tsj"
         }, 
         {
          "columns":2,

@@ -1,4 +1,6 @@
 test "initFromSlice" {
+    try changeTestDir();
+
     const test_tileset = @embedFile("tileset.tsj");
 
     const allocator = std.testing.allocator;
@@ -47,6 +49,8 @@ test "initFromSlice" {
 
 const tmz = @import("tmz");
 const Tileset = tmz.Tileset;
+
+const changeTestDir = @import("tests.zig").changeTestDir;
 
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
