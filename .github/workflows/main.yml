@@ -15,7 +15,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            target: x86_64-linux-musl
+            target: x86_64-linux
           - os: macos-latest
             target: aarch64-macos
     runs-on: ${{ matrix.os }}
@@ -33,7 +33,7 @@ jobs:
 
       - run: nix develop -c zig env
 
-      - name: Run tests 
+      - name: Run tests
         run: nix develop -c zig build test -Dtarget=${{ matrix.target }} --summary all
 
   build-windows:
@@ -42,14 +42,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: mlugg/setup-zig@v1
+      - uses: mlugg/setup-zig@v2
         with:
-          version: "0.14.0"
+          version: "0.15.1"
 
       - run: zig env
 
-      - name: Run tests 
-        run: zig build test -Dtarget=x86_64-windows-gnu --summary all
+      - name: Run tests
+        run: zig build test --summary all
 
   coverage:
     runs-on: ubuntu-latest
@@ -68,11 +68,11 @@ jobs:
       - run: nix develop -c zig env
 
       - name: Run tests with coverage
-        run: nix develop -c zig build test -Dcoverage -Dtarget=x86_64-linux-musl --summary all
+        run: nix develop -c zig build test -Dcoverage -Dtarget=x86_64-linux --summary all
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
         with:
-          directory: zig-out/coverage/kcov-merged
+          directory: zig-out/coverage
           fail_ci_if_error: true
           verbose: true

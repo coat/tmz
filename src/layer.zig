@@ -1,5 +1,162 @@
+pub const Layer = struct {
+    id: u32,
+    name: []const u8,
+    content: LayerContent,
+    visible: bool,
+    class: ?[]const u8 = null,
+
+    pub fn fromJson(allocator: Allocator, json_layer: JsonLayer) !Layer {
+        return .{
+            .class = if (json_layer.class) |class| try allocator.dupe(u8, class) else null,
+            .id = json_layer.id,
+            .name = try allocator.dupe(u8, json_layer.name),
+            .visible = json_layer.visible,
+            .content = try LayerContent.fromJson(allocator, json_layer),
+        };
+    }
+
+    pub fn deinit(self: *Layer, allocator: Allocator) void {
+        if (self.class) |class| allocator.free(class);
+        allocator.free(self.name);
+        self.content.deinit(allocator);
+    }
+
+    /// https://doc.mapeditor.org/en/stable/reference/jsonk-map-format/#layer
+    pub const JsonLayer = struct {
+        /// `tilelayer` only.
+        chunks: ?[]Chunk.JsonChunk = null,
+        class: ?[]const u8 = null,
+        /// `tilelayer` only.
+        compression: ?Compression = null,
+        /// Array of unsigned int (GIDs)
+        /// `tilelayer` only.
+        layer_data: ?[]u32 = null,
+        /// `objectgroup` only.
+        draw_order: ?DrawOrder = .topdown,
+        /// `tilelayer` only.
+        encoding: ?Encoding = .csv,
+        /// Row count. Same as map height for fixed-size maps.
+        /// `tilelayer` only.
+        height: ?u32 = null,
+        /// Incremental ID - unique across all layers
+        id: u32,
+        /// `imagelayer` only
+        image: ?[]const u8 = null,
+        /// `group` only
+        layers: ?[]JsonLayer = null,
+        /// Whether layer is locked in the editor
+        locked: bool = false,
+        name: []const u8,
+        /// `objectgroup` only.
+        objects: ?[]Object.JsonObject = null,
+        /// Horizontal layer offset in pixels
+        offsetx: f32 = 0,
+        /// Vertical layer offset in pixels
+        offsety: f32 = 0,
+        opacity: f32,
+        parallaxx: f32 = 1,
+        parallaxy: f32 = 1,
+        properties: ?[]Property = null,
+        /// `imagelayer` only
+        repeatx: ?bool = null,
+        /// `imagelayer` only
+        repeaty: ?bool = null,
+        /// X coordinate where layer content starts (for infinite maps)
+        startx: ?i32 = null,
+        /// Y coordinate where layer content starts (for infinite maps)
+        starty: ?i32 = null,
+        /// Hex-formatted tint color (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers
+        tintcolor: ?Color = null,
+        /// `imagelayer` only
+        transparentcolor: ?Color = null,
+        type: Type,
+        visible: bool,
+        /// Column count. Same as map width for fixed-size maps.
+        /// `tilelayer` only.
+        width: ?u32 = null,
+        /// Horizontal layer offset in tiles. Always 0.
+        x: i32 = 0,
+        /// Vertical layer offset in tiles. Always 0.
+        y: i32 = 0,
+
+        pub const DrawOrder = enum { topdown, index };
+        pub const Encoding = enum { csv, base64 };
+        pub const Type = enum { tilelayer, objectgroup, imagelayer, group };
+
+        pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !JsonLayer {
+            var layer: JsonLayer = .{
+                .class = if (source.object.get("class")) |class| try innerParseFromValue([]const u8, allocator, class, options) else null,
+                .compression = if (source.object.get("compression")) |compression| try innerParseFromValue(Compression, allocator, compression, options) else null,
+                .chunks = if (source.object.get("chunks")) |chunks| try innerParseFromValue([]Chunk.JsonChunk, allocator, chunks, options) else null,
+                .layer_data = if (source.object.get("layerdata")) |layerdata| try innerParseFromValue([]u32, allocator, layerdata, options) else null,
+                .draw_order = if (source.object.get("draworder")) |draworder| try innerParseFromValue(DrawOrder, allocator, draworder, options) else .topdown,
+                .encoding = if (source.object.get("encoding")) |encoding| try innerParseFromValue(Encoding, allocator, encoding, options) else .csv,
+                .height = if (source.object.get("height")) |height| try innerParseFromValue(u32, allocator, height, options) else null,
+
+                .id = try innerParseFromValue(u32, allocator, source.object.get("id").?, options),
+                .image = if (source.object.get("image")) |image| try innerParseFromValue([]const u8, allocator, image, options) else null,
+                .layers = if (source.object.get("layers")) |layers| try innerParseFromValue([]JsonLayer, allocator, layers, options) else null,
+                .locked = if (source.object.get("locked")) |locked| try innerParseFromValue(bool, allocator, locked, options) else false,
+                .name = try innerParseFromValue([]const u8, allocator, source.object.get("name").?, options),
+                .objects = if (source.object.get("objects")) |objects| try innerParseFromValue([]Object.JsonObject, allocator, objects, options) else null,
+                .offsetx = if (source.object.get("offsetx")) |offsetx| try innerParseFromValue(f32, allocator, offsetx, options) else 0,
+                .offsety = if (source.object.get("offsety")) |offsety| try innerParseFromValue(f32, allocator, offsety, options) else 0,
+                .opacity = try innerParseFromValue(f32, allocator, source.object.get("opacity").?, options),
+                .parallaxx = if (source.object.get("parallaxx")) |parallaxx| try innerParseFromValue(f32, allocator, parallaxx, options) else 1,
+                .parallaxy = if (source.object.get("parallaxy")) |parallaxy| try innerParseFromValue(f32, allocator, parallaxy, options) else 1,
+                .properties = if (source.object.get("properties")) |properties| try innerParseFromValue([]Property, allocator, properties, options) else null,
+                .repeatx = if (source.object.get("repeatx")) |repeatx| try innerParseFromValue(bool, allocator, repeatx, options) else null,
+                .startx = if (source.object.get("startx")) |startx| try innerParseFromValue(i32, allocator, startx, options) else null,
+                .starty = if (source.object.get("starty")) |starty| try innerParseFromValue(i32, allocator, starty, options) else null,
+                .tintcolor = if (source.object.get("tintcolor")) |tintcolor| try innerParseFromValue(Color, allocator, tintcolor, options) else null,
+                .transparentcolor = if (source.object.get("transparentcolor")) |transparentcolor| try innerParseFromValue(Color, allocator, transparentcolor, options) else null,
+                .type = try innerParseFromValue(Type, allocator, source.object.get("type").?, options),
+                .visible = try innerParseFromValue(bool, allocator, source.object.get("visible").?, options),
+                .width = if (source.object.get("width")) |width| try innerParseFromValue(u32, allocator, width, options) else null,
+                .x = if (source.object.get("x")) |x| try innerParseFromValue(i32, allocator, x, options) else 0,
+                .y = if (source.object.get("y")) |y| try innerParseFromValue(i32, allocator, y, options) else 0,
+            };
+
+            if (layer.type == .tilelayer) {
+                if (source.object.get("data")) |data| {
+                    if (layer.encoding == .csv) {
+                        layer.layer_data = try innerParseFromValue([]u32, allocator, data, options);
+                    } else {
+                        const base64_data = try innerParseFromValue([]const u8, allocator, data, options);
+                        const layer_size: usize = (layer.width orelse 0) * (layer.height orelse 0);
+
+                        layer.layer_data = parseBase64Data(allocator, base64_data, layer_size, layer.compression orelse .none);
+                    }
+                }
+            }
+
+            return layer;
+        }
+    };
+};
+
+pub const Compression = enum {
+    none,
+    zlib,
+    gzip,
+    zstd,
+
+    pub fn jsonParseFromValue(_: Allocator, source: Value, _: ParseOptions) !@This() {
+        return switch (source) {
+            .string, .number_string => |value| cmp: {
+                if (value.len == 0) {
+                    break :cmp .none;
+                } else {
+                    break :cmp std.meta.stringToEnum(Compression, value) orelse .none;
+                }
+            },
+            else => .none,
+        };
+    }
+};
+
 pub const TileLayer = struct {
-    data: std.ArrayListUnmanaged(u32),
+    data: std.ArrayList(u32),
     chunks: ?[]Chunk = null,
 
     pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !TileLayer {
@@ -9,10 +166,22 @@ pub const TileLayer = struct {
         if (json_layer.layer_data) |json_data| {
             try layer.data.insertSlice(allocator, 0, json_data);
         }
+        if (json_layer.chunks) |json_chunks| {
+            layer.chunks = try allocator.alloc(Chunk, json_chunks.len);
+            for (json_chunks, 0..) |json_chunk, i| {
+                layer.chunks.?[i] = try Chunk.fromJson(allocator, json_chunk, json_layer.compression orelse .none);
+            }
+        }
         return layer;
     }
 
     pub fn deinit(self: *TileLayer, allocator: Allocator) void {
+        if (self.chunks) |chunks| {
+            for (chunks) |*chunk| {
+                chunk.deinit(allocator);
+            }
+            allocator.free(chunks);
+        }
         self.data.deinit(allocator);
     }
 };
@@ -64,144 +233,6 @@ pub const ObjectGroup = struct {
 pub const ImageLayer = struct {};
 pub const Group = struct {};
 
-pub const Layer = struct {
-    id: u32,
-    class: ?[]const u8 = null,
-    content: LayerContent,
-    visible: bool,
-
-    pub fn fromJson(allocator: Allocator, json_layer: JsonLayer) !Layer {
-        return .{
-            .class = if (json_layer.class) |class| try allocator.dupe(u8, class) else null,
-            .id = json_layer.id,
-            .visible = json_layer.visible,
-            .content = try LayerContent.fromJson(allocator, json_layer),
-        };
-    }
-
-    pub fn deinit(self: *Layer, allocator: Allocator) void {
-        if (self.class) |class| allocator.free(class);
-        self.content.deinit(allocator);
-    }
-
-    /// https://doc.mapeditor.org/en/stable/reference/jsonk-map-format/#layer
-    pub const JsonLayer = struct {
-        /// `tilelayer` only.
-        chunks: ?[]Chunk = null,
-        class: ?[]const u8 = null,
-        /// `tilelayer` only.
-        compression: ?Compression = null,
-        /// Array of unsigned int (GIDs)
-        /// `tilelayer` only.
-        layer_data: ?[]u32 = null,
-        /// `objectgroup` only.
-        draw_order: ?DrawOrder = .topdown,
-        /// `tilelayer` only.
-        encoding: ?Encoding = .csv,
-        /// Row count. Same as map height for fixed-size maps.
-        /// `tilelayer` only.
-        height: ?u32 = null,
-        /// Incremental ID - unique across all layers
-        id: u32,
-        /// `imagelayer` only
-        image: ?[]const u8 = null,
-        /// `group` only
-        layers: ?[]JsonLayer = null,
-        /// Whether layer is locked in the editor
-        locked: bool = false,
-        name: []const u8,
-        /// `objectgroup` only.
-        objects: ?[]Object.JsonObject = null,
-        /// Horizontal layer offset in pixels
-        offset_x: f32 = 0,
-        /// Vertical layer offset in pixels
-        offset_y: f32 = 0,
-        opacity: f32,
-        parallax_x: f32 = 1,
-        parallax_y: f32 = 1,
-        properties: ?std.StringHashMapUnmanaged(Property) = null,
-        /// `imagelayer` only
-        repeat_x: ?bool = null,
-        /// `imagelayer` only
-        repeat_y: ?bool = null,
-        /// X coordinate where layer content starts (for infinite maps)
-        start_x: ?i32 = null,
-        /// Y coordinate where layer content starts (for infinite maps)
-        start_y: ?i32 = null,
-        /// Hex-formatted tint color (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers
-        tint_color: ?[]const u8 = null,
-        /// `imagelayer` only
-        transparent_color: ?[]const u8 = null,
-        type: Type,
-        visible: bool,
-        /// Column count. Same as map width for fixed-size maps.
-        /// `tilelayer` only.
-        width: ?u32 = null,
-        /// Horizontal layer offset in tiles. Always 0.
-        x: i32 = 0,
-        /// Vertical layer offset in tiles. Always 0.
-        y: i32 = 0,
-
-        pub const DrawOrder = enum { topdown, index };
-        pub const Encoding = enum { csv, base64 };
-        pub const Type = enum { tilelayer, objectgroup, imagelayer, group };
-
-        pub const Compression = enum {
-            none,
-            zlib,
-            gzip,
-            zstd,
-
-            pub fn jsonParseFromValue(_: Allocator, source: Value, _: ParseOptions) !@This() {
-                return switch (source) {
-                    .string, .number_string => |value| cmp: {
-                        if (value.len == 0) {
-                            break :cmp .none;
-                        } else {
-                            break :cmp std.meta.stringToEnum(Compression, value) orelse .none;
-                        }
-                    },
-                    else => .none,
-                };
-            }
-        };
-
-        pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
-            var layer = try jsonParser(@This(), allocator, source, options);
-
-            if (source.object.get("properties")) |props| {
-                const properties = try std.json.innerParseFromValue([]Property, allocator, props, .{});
-                layer.properties = std.StringHashMapUnmanaged(Property).empty;
-                for (properties) |property| {
-                    try layer.properties.?.put(allocator, property.name, property);
-                }
-            }
-
-            if (layer.type == .tilelayer) {
-                if (layer.chunks) |chunks| {
-                    for (chunks) |*chunk| {
-                        const chunk_size: usize = chunk.width * chunk.height;
-                        if (layer.encoding == .base64) {
-                            chunk.data = .{ .csv = parseBase64Data(allocator, chunk.data.base64, chunk_size, layer.compression orelse .none) };
-                        }
-                    }
-                }
-                if (source.object.get("data")) |data| {
-                    if (layer.encoding == .csv) {
-                        layer.layer_data = try std.json.parseFromValueLeaky([]u32, allocator, data, options);
-                    } else {
-                        const base64_data = try std.json.parseFromValueLeaky([]const u8, allocator, data, options);
-                        const layer_size: usize = (layer.width orelse 0) * (layer.height orelse 0);
-
-                        layer.layer_data = parseBase64Data(allocator, base64_data, layer_size, layer.compression orelse .none);
-                    }
-                }
-            }
-            return layer;
-        }
-    };
-};
-
 pub const LayerContent = union(enum) {
     tile_layer: TileLayer,
     object_group: ObjectGroup,
@@ -234,30 +265,78 @@ pub const LayerContent = union(enum) {
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#chunk
 pub const Chunk = struct {
-    /// Array of unsigned int (GIDs) or base64-encoded data
-    data: EncodedData,
+    data: []u32,
     height: u32,
     width: u32,
     x: u32,
     y: u32,
 
-    const EncodedData = union(Layer.JsonLayer.Encoding) {
-        csv: []const u32,
-        base64: []const u8,
+    /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#chunk
+    pub const JsonChunk = struct {
+        /// Array of unsigned int (GIDs) or base64-encoded data
+        data: EncodedData,
+        height: u32,
+        width: u32,
+        x: u32,
+        y: u32,
+
+        const EncodedData = union(Layer.JsonLayer.Encoding) {
+            csv: []u32,
+            base64: []const u8,
+        };
+
+        pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
+            var chunk: JsonChunk = .{
+                .height = try innerParseFromValue(u32, allocator, source.object.get("height").?, options),
+                .width = try innerParseFromValue(u32, allocator, source.object.get("width").?, options),
+                .x = try innerParseFromValue(u32, allocator, source.object.get("x").?, options),
+                .y = try innerParseFromValue(u32, allocator, source.object.get("y").?, options),
+                .data = undefined,
+            };
+
+            if (source.object.get("data")) |data| {
+                if (data == .array) {
+                    chunk.data = .{ .csv = try innerParseFromValue([]u32, allocator, data, options) };
+                }
+                if (data == .string) {
+                    chunk.data = .{ .base64 = try innerParseFromValue([]const u8, allocator, data, options) };
+                }
+            }
+            return chunk;
+        }
     };
 
-    pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
-        var chunk = try jsonParser(@This(), allocator, source, options);
+    pub fn fromJson(allocator: Allocator, json_chunk: JsonChunk, compression: Compression) !Chunk {
+        var arena_state = std.heap.ArenaAllocator.init(allocator);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
 
-        if (source.object.get("data")) |data| {
-            if (data == .array) {
-                chunk.data = .{ .csv = try std.json.parseFromValueLeaky([]const u32, allocator, data, options) };
-            }
-            if (data == .string) {
-                chunk.data = .{ .base64 = try std.json.parseFromValueLeaky([]const u8, allocator, data, options) };
-            }
-        }
-        return chunk;
+        const data: []u32 = try allocator.dupe(
+            u32,
+            set_data: {
+                switch (json_chunk.data) {
+                    .csv => break :set_data json_chunk.data.csv,
+                    .base64 => {
+                        const base64_data = parseBase64Data(arena, json_chunk.data.base64, json_chunk.width * json_chunk.height, compression);
+
+                        break :set_data base64_data;
+                    },
+                }
+            },
+        );
+
+        return .{
+            .x = json_chunk.x,
+            .y = json_chunk.y,
+            .width = json_chunk.width,
+            .height = json_chunk.height,
+
+            .data = data,
+        };
+    }
+
+    pub fn deinit(self: *Chunk, allocator: Allocator) void {
+        allocator.free(self.data);
     }
 };
 
@@ -361,26 +440,26 @@ pub const Point = struct {
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#text
 pub const Text = struct {
-    bold: bool,
-    color: []const u8,
-    font_family: []const u8 = "sans-serif",
-    h_align: enum { center, right, justify, left } = .left,
+    bold: ?bool = null,
+    color: ?[]const u8 = null,
+    fontfamily: []const u8 = "sans-serif",
+    halign: enum { center, right, justify, left } = .left,
     italic: bool = false,
     kerning: bool = true,
-    pixel_size: usize = 16,
+    pixelsize: u32 = 16,
     strikeout: bool = false,
     text: []const u8,
     underline: bool = false,
-    v_align: enum { center, bottom, top } = .top,
+    valign: enum { center, bottom, top } = .top,
     wrap: bool = false,
-
-    pub fn jsonParseFromValue(allocator: Allocator, source: Value, options: ParseOptions) !@This() {
-        return try jsonParser(@This(), allocator, source, options);
-    }
 };
 
 // Decode base64 data (and optionally decompress) into a slice of u32 Global Tile Ids allocated on the heap, caller owns slice
-fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Layer.JsonLayer.Compression) []u32 {
+fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Compression) []u32 {
+    // var arena = std.heap.ArenaAllocator.init(allocator);
+    // defer arena.deinit();
+    // const arena_allocator = arena.allocator();
+
     const decoded_size = base64_decoder.calcSizeForSlice(base64_data) catch @panic("Unable to decode base64 data");
     var decoded = allocator.alloc(u8, decoded_size) catch @panic("OOM");
     defer allocator.free(decoded);
@@ -392,7 +471,7 @@ fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, c
     const alignment = @alignOf(u32);
 
     if (compression != .none)
-        decoded = decompress(allocator, decoded, size, compression);
+        decoded = decompress(allocator, decoded, compression);
 
     if (size * alignment != decoded.len)
         @panic("data size does not match Layer dimensions");
@@ -407,77 +486,44 @@ fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, c
 }
 
 // caller owns returned slice
-fn decompress(allocator: Allocator, compressed: []const u8, size: usize, compression: Layer.JsonLayer.Compression) []u8 {
-    const decompressed = allocator.alloc(u8, size * @alignOf(u32)) catch @panic("OOM");
-    var decompressed_buf = std.io.fixedBufferStream(decompressed);
-    var compressed_buf = std.io.fixedBufferStream(compressed);
+fn decompress(allocator: Allocator, compressed: []const u8, compression: Compression) []u8 {
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    defer out.deinit();
+
+    var compressed_reader: std.Io.Reader = .fixed(compressed);
 
     return switch (compression) {
         .gzip => {
-            std.compress.gzip.decompress(compressed_buf.reader(), decompressed_buf.writer()) catch @panic("Unable to decompress gzip");
-            return decompressed;
+            var decompresser: std.compress.flate.Decompress = .init(&compressed_reader, .gzip, &.{});
+            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress gzip");
+
+            return out.toOwnedSlice() catch @panic("OOM");
         },
         .zlib => {
-            std.compress.zlib.decompress(compressed_buf.reader(), decompressed_buf.writer()) catch @panic("Unable to decompress zlib");
-            return decompressed;
+            var decompresser: std.compress.flate.Decompress = .init(&compressed_reader, .zlib, &.{});
+            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress zlib");
+
+            return out.toOwnedSlice() catch @panic("OOM");
         },
         .zstd => {
-            const window_buffer = allocator.alloc(u8, std.compress.zstd.DecompressorOptions.default_window_buffer_len) catch @panic("OOM");
-            defer allocator.free(window_buffer);
+            var decompresser: std.compress.zstd.Decompress = .init(&compressed_reader, &.{}, .{});
 
-            var zstd_stream = std.compress.zstd.decompressor(compressed_buf.reader(), .{ .window_buffer = window_buffer });
-            _ = zstd_stream.reader().readAll(decompressed) catch @panic("Unable to decompress zstd");
+            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress zstd");
 
-            return decompressed;
+            return out.toOwnedSlice() catch @panic("OOM");
         },
-        .none => return allocator.dupe(u8, compressed) catch @panic("OOM"),
+        .none => return @constCast(compressed),
     };
 }
 
-test "Layer" {
-    const allocator = std.testing.allocator;
-
-    const json = @embedFile("test/object_layer.json");
-
-    const parsed_layer = try std.json.parseFromSlice(Value, allocator, json, .{ .ignore_unknown_fields = true });
-    defer parsed_layer.deinit();
-    const managed_layer = try std.json.parseFromValue(Layer.JsonLayer, allocator, parsed_layer.value, .{ .ignore_unknown_fields = true });
-    defer managed_layer.deinit();
-    const json_layer = managed_layer.value;
-
-    const properties = json_layer.properties.?;
-    var iterator = properties.iterator();
-    while (iterator.next()) |entry| {
-        try std.testing.expectEqualStrings("custom", entry.value_ptr.name);
-    }
-
-    try expectEqual(Layer.JsonLayer.DrawOrder.topdown, json_layer.draw_order);
-
-    var layer = try Layer.fromJson(allocator, json_layer);
-    defer layer.deinit(allocator);
-
-    const object_group = layer.content.object_group;
-
-    try expectEqual(5, object_group.objects.items.len);
-    {
-        const object = object_group.getByClass("hello").?;
-        try expectEqual(1, object.id);
-    }
-
-    {
-        const object = object_group.get("polygon").?;
-        try expectEqual(8, object.id);
-    }
-}
-
-const Property = @import("property.zig").Property;
-const tmz = @import("tmz.zig");
+const tmz = @import("root.zig");
 const Color = tmz.Color;
-const jsonParser = tmz.jsonParser;
+const Property = tmz.Property;
 
 const std = @import("std");
 const base64_decoder = std.base64.standard.Decoder;
 const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;
 const Allocator = std.mem.Allocator;
+const innerParseFromValue = std.json.innerParseFromValue;
 const expectEqual = std.testing.expectEqual;

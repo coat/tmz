@@ -2,34 +2,28 @@
   description = "A library for parsing Tiled maps";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
-
-    zig-overlay.url = "github:mitchellh/zig-overlay";
-    zig-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
   };
 
-  outputs = {
-    nixpkgs,
-    zig-overlay,
-    ...
-  }:
+  outputs = {nixpkgs, ...}: let
+    systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+  in
     builtins.foldl' nixpkgs.lib.recursiveUpdate {} (
       builtins.map (
         system: let
-          pkgs-stable = nixpkgs.legacyPackages.${system};
-          zig = zig-overlay.packages.${system}."0.14.0";
+          pkgs = nixpkgs.legacyPackages.${system};
         in {
-          devShells.${system}.default = pkgs-stable.mkShell {
-            nativeBuildInputs = with pkgs-stable; [
-              sdl3
-              sdl3-image
-              zig
-            ]
-            ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [kcov]);
+          devShells.${system}.default = pkgs.mkShell {
+            packages = with pkgs;
+              [
+                zig_0_15
+              ]
+              ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [kcov]);
           };
 
-          formatter.${system} = pkgs-stable.alejandra;
+          formatter.${system} = pkgs.alejandra;
         }
-      ) (builtins.attrNames zig-overlay.packages)
+      )
+      systems
     );
 }

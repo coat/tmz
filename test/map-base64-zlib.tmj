@@ -1,4 +1,5 @@
-{ "class":"bar",
+{ "backgroundcolor":"#aabbccdd",
+ "class":"bar",
  "compressionlevel":-1,
  "height":30,
  "infinite":false,
@@ -6,7 +7,7 @@
         {
          "class":"bar",
          "compression":"zlib",
-         "data":"eJztwTEBAAAIwKAF8LF\/WYMIbDUBAADwzQGlvwAe",
+         "data":"eJztwQEBAAAAASD+nzZE1QAAAPBoHCAAAg==",
          "encoding":"base64",
          "height":30,
          "id":1,
@@ -26,18 +27,18 @@
                 {
                  "height":19,
                  "id":1,
-                 "name":"",
+                 "name":"hello",
                  "rotation":0,
                  "text":
                     {
                      "text":"Hello World",
                      "wrap":true
                     },
-                 "type":"",
+                 "type":"hello_world",
                  "visible":true,
                  "width":91.4375,
                  "x":70,
-                 "y":44.6353383458647
+                 "y":44
                 }, 
                 {
                  "height":84.2105263157895,
@@ -71,17 +72,17 @@
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
- "tileheight":32,
+ "tileheight":16,
  "tilesets":[
         {
          "firstgid":1,
-         "source":"src\/test\/source_tileset.tsj"
+         "source":"test/source_tileset.tsj"
         }, 
         {
-         "firstgid":1037,
-         "source":"src\/test\/images_tileset.tsj"
+         "firstgid":5,
+         "source":"test/images_tileset.tsj"
         }],
- "tilewidth":32,
+ "tilewidth":16,
  "type":"map",
  "version":"1.10",
  "width":30

@@ -29,7 +29,7 @@ Format](https://doc.mapeditor.org/en/stable/reference/json-map-format/) -
 1. Add `tmz` as a dependency in your `build.zig.zon`:
 
 ```bash
-zig fetch --save git+https://github.com/coat/tmz.zig#main
+zig fetch --save git+https://github.com/coat/tmz.git
 ```
 
 2. Add module to `build.zig`:
@@ -55,13 +55,12 @@ if (object) |player| {
   std.debug.info("Player position: {d},{d}\n", .{ player.x, player.y });
 }
 
-const ground_layer = map.getLayer("ground");
+const ground_layer = map.layers.get("ground");
 if (ground_layer) |layer| {
   for (layer.content.data.items) |gid| {
-    if (gid == 0) continue;
     const tile = map.getTile(gid);
     if (tile) |t| {
-      drawTile(tile.image, tile.x, tile.y);
+      drawTile(tile.image, tile.x, tile.y, tile.orientation);
     }
   }
 }
@@ -89,9 +88,7 @@ document.
 ## Building
 
 Building the library requires [Zig
-0.14.0](https://ziglang.org/download/#release-0.14.0). To build and run the
-examples (TODO), [SDL 3.2](https://github.com/libsdl-org/SDL/releases/latest)
-is also required.
+0.15.1](https://ziglang.org/download/#release-0.15.1).
 
 `zig build install` will build the full library and output a FHS-compatible
 directory in zig-out. You can customize the output directory with the --prefix
