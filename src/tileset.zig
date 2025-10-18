@@ -10,26 +10,26 @@ pub const Tileset = struct {
     tiles: std.AutoHashMapUnmanaged(u32, Tile),
     properties: std.StringHashMapUnmanaged(Property),
 
-    pub fn initFromSlice(alloc: Allocator, json: []const u8) !Tileset {
-        var arena = std.heap.ArenaAllocator.init(alloc);
-        defer arena.deinit();
-        const arena_allocator = arena.allocator();
+    pub fn initFromSlice(allocator: Allocator, json: []const u8) !Tileset {
+        var arena_state = std.heap.ArenaAllocator.init(allocator);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
 
         const parsed_value = try std.json.parseFromSliceLeaky(
             std.json.Value,
-            arena_allocator,
+            arena,
             json,
             .{ .ignore_unknown_fields = true },
         );
 
         const json_tileset = try std.json.parseFromValueLeaky(
             JsonTileset,
-            arena_allocator,
+            arena,
             parsed_value,
             .{ .ignore_unknown_fields = true },
         );
 
-        return try fromJson(alloc, json_tileset);
+        return try fromJson(allocator, json_tileset);
     }
 
     pub fn fromJson(allocator: Allocator, json_tileset: JsonTileset) !Tileset {
@@ -62,22 +62,20 @@ pub const Tileset = struct {
 
         var x: u32 = 0;
         var y: u32 = 0;
+        var tile_id: u32 = 0;
 
-        var gid = tileset.first_gid - 1;
-
-        const last_gid: u32 = gid + tileset.tilecount -| 1;
-        while (gid <= last_gid) : (gid += 1) {
+        while (tile_id < tileset.tilecount) : (tile_id += 1) {
             const tile_x = x * (tileset.tile_width + json_tileset.spacing) + json_tileset.margin;
             const tile_y = y * (tileset.tile_height + json_tileset.spacing) + json_tileset.margin;
 
             var tile: Tile = fetch_or_create: {
-                if (tileset.tiles.getPtr(gid)) |t| {
+                if (tileset.tiles.getPtr(tile_id)) |t| {
                     t.*.x = tile_x;
                     t.*.y = tile_y;
                     break :fetch_or_create t.*;
                 } else {
                     break :fetch_or_create .{
-                        .id = gid,
+                        .id = tile_id,
                         .x = tile_x,
                         .y = tile_y,
 
@@ -87,7 +85,7 @@ pub const Tileset = struct {
             };
             tile.width = tileset.tile_width;
             tile.height = tileset.tile_height;
-            try tileset.tiles.put(allocator, gid, tile);
+            try tileset.tiles.put(allocator, tile_id, tile);
 
             if (x >= @as(i64, @intCast(tileset.columns)) - 1) {
                 y += 1;
@@ -203,10 +201,6 @@ pub const Frame = struct {
     duration: u32,
     tileid: u32,
 };
-
-inline fn get(value: anytype) @TypeOf(value) {
-    return if (value) |v| return v else null;
-}
 
 const Property = @import("Property.zig");
 

@@ -1,6 +1,6 @@
 .{
     .name = .tmz,
-    .version = "0.2.0",
+    .version = "0.2.1",
     .fingerprint = 0xcc3a94566dc4ab5d, // Changing this has security and trust implications.
     .minimum_zig_version = "0.15.1",
     .dependencies = .{},

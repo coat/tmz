@@ -90,7 +90,7 @@ fn baseTests(map: Map) !void {
     try expectEqual(null, bad_tile);
 
     const foo = map.getTile(2).?;
-    try expectEqual(1, foo.id);
+    try expectEqual(2 - tileset.first_gid, foo.id);
     try expectEqual(16, foo.x);
     try expectEqual(0, foo.y);
 
