@@ -16,7 +16,7 @@
           devShells.${system}.default = pkgs.mkShell {
             packages = with pkgs;
               [
-                zig_0_15
+                zig
               ]
               ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [kcov]);
           };
