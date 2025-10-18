@@ -1,39 +1,40 @@
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-
     const coverage = b.option(bool, "coverage", "Generate a coverage report with kcov") orelse false;
+    const coverage_requested = coverage and b.graph.host.result.os.tag == .linux;
 
     const mod = b.addModule("tmz", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
-        .optimize = optimize,
     });
 
     const mod_tests = b.addTest(.{
         .root_module = mod,
-        .use_llvm = coverage,
     });
-    const run_mod_tests = b.addRunArtifact(mod_tests);
 
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("test/tests.zig"),
             .target = target,
-            .optimize = optimize,
             .imports = &.{
                 .{ .name = "tmz", .module = mod },
             },
         }),
-        .use_llvm = coverage,
     });
+
+    if (coverage_requested) {
+        mod_tests.use_llvm = true;
+        tests.use_llvm = true;
+    }
+
+    const run_mod_tests = b.addRunArtifact(mod_tests);
     const run_tests = b.addRunArtifact(tests);
 
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_tests.step);
 
-    if (coverage) {
+    if (coverage_requested) {
         var run_test_steps: std.ArrayList(*std.Build.Step.Run) = .empty;
         run_test_steps.append(b.allocator, run_mod_tests) catch @panic("OOM");
         run_test_steps.append(b.allocator, run_tests) catch @panic("OOM");
