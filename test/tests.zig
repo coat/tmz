@@ -6,7 +6,12 @@ comptime {
 }
 
 pub fn changeTestDir() !void {
-    var dir = std.fs.cwd().openDir("test", .{}) catch return;
+    const file_name = try std.fs.cwd().realpathAlloc(std.testing.allocator, ".");
+    defer std.testing.allocator.free(file_name);
+
+    if (std.mem.endsWith(u8, file_name, "test")) return;
+
+    var dir = try std.fs.cwd().openDir("test", .{});
     defer dir.close();
 
     try dir.setAsCwd();
