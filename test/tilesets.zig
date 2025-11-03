@@ -8,6 +8,21 @@ test "initFromSlice" {
     var tileset = try Tileset.initFromSlice(allocator, test_tileset);
     defer tileset.deinit(allocator);
 
+    try tilesetTests(tileset);
+}
+
+test "initFromFile" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+
+    var tileset = try Tileset.initFromFile(allocator, "tileset.tsj");
+    defer tileset.deinit(allocator);
+
+    try tilesetTests(tileset);
+}
+
+fn tilesetTests(tileset: Tileset) !void {
     try expectEqual(4, tileset.tilecount);
     try expectEqual(16, tileset.tile_width);
     try expectEqual(16, tileset.tile_height);
