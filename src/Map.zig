@@ -5,7 +5,8 @@ tile_height: u32,
 infinite: bool,
 orientation: Orientation,
 
-layers: std.StringHashMapUnmanaged(Layer),
+layers_by_name: std.StringHashMapUnmanaged(Layer),
+layers: std.ArrayList(Layer),
 tilesets: std.ArrayList(Tileset),
 
 background_color: ?Color = null,
@@ -33,6 +34,7 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
         .background_color = if (json_map.backgroundcolor) |color| color else null,
         .class = if (json_map.class) |c| try alloc.dupe(u8, c) else null,
         .tilesets = .empty,
+        .layers_by_name = .empty,
         .layers = .empty,
     };
 
@@ -46,7 +48,8 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
     if (json_map.layers) |json_layers| {
         for (json_layers) |json_layer| {
             const layer = try Layer.fromJson(alloc, json_layer);
-            try map.layers.put(alloc, layer.name, layer);
+            try map.layers.append(alloc, layer);
+            try map.layers_by_name.put(alloc, layer.name, layer);
         }
     }
 
@@ -73,11 +76,12 @@ pub fn initFromFile(allocator: Allocator, path: []const u8) !Map {
 pub fn deinit(self: *Map, allocator: Allocator) void {
     if (self.class) |class| allocator.free(class);
 
-    var layers_it = self.layers.valueIterator();
-    while (layers_it.next()) |value_ptr| {
-        value_ptr.*.deinit(allocator);
+    for (self.layers.items) |*layer| {
+        layer.deinit(allocator);
     }
     self.layers.deinit(allocator);
+
+    self.layers_by_name.deinit(allocator);
 
     for (self.tilesets.items) |*tileset| {
         tileset.deinit(allocator);
@@ -106,7 +110,7 @@ pub fn getTile(self: Map, gid: u32) ?Tile {
 
 /// Finds first object
 pub fn findObjectByClass(self: Map, class: []const u8) ?Object {
-    var layer_it = self.layers.valueIterator();
+    var layer_it = self.layers_by_name.valueIterator();
     while (layer_it.next()) |layer| {
         if (layer.content == .object_group) {
             if (layer.content.object_group.getByClass(class)) |object| {
@@ -119,8 +123,9 @@ pub fn findObjectByClass(self: Map, class: []const u8) ?Object {
 
 /// Finds first object by name
 pub fn findObject(self: Map, name: []const u8) ?Object {
-    var layer_it = self.layers.valueIterator();
-    while (layer_it.next()) |layer| {
+    // var layer_it = self.layers_by_name.valueIterator();
+    // while (layer_it.next()) |layer| {
+    for (self.layers.items) |layer| {
         if (layer.content == .object_group) {
             if (layer.content.object_group.get(name)) |object| {
                 return object;
@@ -179,6 +184,29 @@ const JsonMap = struct {
     pub const RenderOrder = enum { @"right-down", @"right-up", @"left-down", @"left-up" };
     pub const StaggerAxis = enum { x, y };
     pub const StaggerIndex = enum { odd, even };
+};
+
+pub const Gid = packed struct(u32) {
+    flags: Flags,
+    gid: u28,
+
+    pub fn fromInt(item: u32) Gid {
+        return @bitCast(item);
+    }
+};
+
+pub const Flags = packed struct(u4) {
+    flipped_horizontally: bool,
+    flipped_vertically: bool,
+    flipped_diagonally: bool,
+    rotated_120: bool,
+
+    pub const clear: Flags = .{
+        .flipped_horizontally = false,
+        .flipped_vertically = false,
+        .flipped_diagonally = false,
+        .rotated_120 = false,
+    };
 };
 
 const Map = @This();

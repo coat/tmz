@@ -526,4 +526,3 @@ const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;
 const Allocator = std.mem.Allocator;
 const innerParseFromValue = std.json.innerParseFromValue;
-const expectEqual = std.testing.expectEqual;

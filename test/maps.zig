@@ -37,7 +37,7 @@ fn regularMapTests(map: Map) !void {
 
     try expectEqual(false, map.infinite);
 
-    const layer = map.layers.get("Tile Layer 1").?;
+    const layer = map.layers_by_name.get("Tile Layer 1").?;
     try expectEqual(1, layer.content.tile_layer.data.items[0]);
 }
 
@@ -64,7 +64,7 @@ fn infiniteMapTests(map: Map) !void {
 
     try expectEqual(true, map.infinite);
 
-    const layer = map.layers.get("ground").?;
+    const layer = map.layers_by_name.get("ground").?;
     try expectEqual(7, layer.content.tile_layer.chunks.?[0].data[0]);
 }
 
