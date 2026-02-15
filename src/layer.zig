@@ -4,14 +4,25 @@ pub const Layer = struct {
     content: LayerContent,
     visible: bool,
     class: ?[]const u8 = null,
+    properties: std.StringHashMapUnmanaged(Property),
 
     pub fn fromJson(allocator: Allocator, json_layer: JsonLayer) !Layer {
+        var properties: std.StringHashMapUnmanaged(Property) = .empty;
+
+        if (json_layer.properties) |props| {
+            for (props) |property| {
+                const prop = try Property.fromJson(allocator, property);
+                try properties.put(allocator, prop.name, prop);
+            }
+        }
+
         return .{
             .class = if (json_layer.class) |class| try allocator.dupe(u8, class) else null,
             .id = json_layer.id,
             .name = try allocator.dupe(u8, json_layer.name),
             .visible = json_layer.visible,
             .content = try LayerContent.fromJson(allocator, json_layer),
+            .properties = properties,
         };
     }
 
@@ -19,6 +30,12 @@ pub const Layer = struct {
         if (self.class) |class| allocator.free(class);
         allocator.free(self.name);
         self.content.deinit(allocator);
+
+        var properties_it = self.properties.valueIterator();
+        while (properties_it.next()) |value_ptr| {
+            value_ptr.*.deinit(allocator);
+        }
+        self.properties.deinit(allocator);
     }
 
     /// https://doc.mapeditor.org/en/stable/reference/jsonk-map-format/#layer
@@ -349,7 +366,7 @@ pub const Object = struct {
     point: ?bool = null,
     polygon: ?[]Point = null,
     polyline: ?[]Point = null,
-    properties: ?[]Property = null,
+    properties: std.StringHashMapUnmanaged(Property),
     rotation: f32,
     template: ?[]const u8 = null,
     text: ?Text = null,
@@ -371,6 +388,15 @@ pub const Object = struct {
     };
 
     pub fn fromJson(allocator: Allocator, json_object: JsonObject) !Object {
+        var properties: std.StringHashMapUnmanaged(Property) = .empty;
+
+        if (json_object.properties) |props| {
+            for (props) |property| {
+                const prop = try Property.fromJson(allocator, property);
+                try properties.put(allocator, prop.name, prop);
+            }
+        }
+
         const object: Object = .{
             .gid = json_object.gid,
             .height = json_object.height,
@@ -383,6 +409,7 @@ pub const Object = struct {
             .width = json_object.width,
             .x = json_object.x,
             .y = json_object.y,
+            .properties = properties,
 
             .type = set_type: {
                 if (json_object.gid) |_| {
@@ -409,6 +436,12 @@ pub const Object = struct {
     pub fn deinit(self: *Object, allocator: Allocator) void {
         allocator.free(self.name);
         if (self.class) |class| allocator.free(class);
+
+        var properties_it = self.properties.valueIterator();
+        while (properties_it.next()) |value_ptr| {
+            value_ptr.*.deinit(allocator);
+        }
+        self.properties.deinit(allocator);
     }
 
     const JsonObject = struct {

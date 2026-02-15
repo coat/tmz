@@ -105,6 +105,14 @@ fn baseTests(map: Map) !void {
 
     try expectEqual(480, map.pixelWidth());
     try expectEqual(480, map.pixelHeight());
+
+    const properties = map.properties;
+    try expectEqual(1, properties.size);
+
+    const prop = properties.get("test_property").?;
+    try expectEqualStrings("test_property", prop.name);
+    try expectEqual(.string, prop.type);
+    try expectEqualStrings("test_value", prop.value.string);
 }
 
 test "findObject" {

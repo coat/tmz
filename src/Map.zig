@@ -7,6 +7,7 @@ orientation: Orientation,
 
 layers_by_name: std.StringHashMapUnmanaged(Layer),
 layers: std.ArrayList(Layer),
+properties: std.StringHashMapUnmanaged(Property),
 tilesets: std.ArrayList(Tileset),
 
 background_color: ?Color = null,
@@ -36,6 +37,7 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
         .tilesets = .empty,
         .layers_by_name = .empty,
         .layers = .empty,
+        .properties = .empty,
     };
 
     if (json_map.tilesets) |json_tilesets| {
@@ -50,6 +52,13 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
             const layer = try Layer.fromJson(alloc, json_layer);
             try map.layers.append(alloc, layer);
             try map.layers_by_name.put(alloc, layer.name, layer);
+        }
+    }
+
+    if (json_map.properties) |properties| {
+        for (properties) |property| {
+            const prop = try Property.fromJson(alloc, property);
+            try map.properties.put(alloc, prop.name, prop);
         }
     }
 
@@ -88,11 +97,11 @@ pub fn deinit(self: *Map, allocator: Allocator) void {
     }
     self.tilesets.deinit(allocator);
 
-    // var properties_it = self.properties.valueIterator();
-    // while (properties_it.next()) |value_ptr| {
-    //     value_ptr.*.deinit(allocator);
-    // }
-    // self.properties.deinit(allocator);
+    var properties_it = self.properties.valueIterator();
+    while (properties_it.next()) |value_ptr| {
+        value_ptr.*.deinit(allocator);
+    }
+    self.properties.deinit(allocator);
 }
 
 pub fn getTile(self: Map, gid: u32) ?Tile {
