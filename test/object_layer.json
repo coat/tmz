@@ -7,6 +7,13 @@
       "height": 19,
       "id": 1,
       "name": "",
+      "properties": [
+        {
+          "name": "obj_prop",
+          "type": "string",
+          "value": "obj_value"
+        }
+      ],
       "rotation": 0,
       "text": {
         "text": "Hello World",

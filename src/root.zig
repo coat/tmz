@@ -71,7 +71,7 @@ test "Color is parsed from string" {
     try std.testing.expectError(error.UnexpectedToken, Color.parse("##bbaabbee"));
 }
 
-const layer = @import("layer.zig");
-const tileset = @import("tileset.zig");
+pub const layer = @import("layer.zig");
+pub const tileset = @import("tileset.zig");
 
 const std = @import("std");
