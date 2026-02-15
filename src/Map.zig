@@ -144,6 +144,43 @@ pub fn findObject(self: Map, name: []const u8) ?Object {
     return null;
 }
 
+/// Finds first layer by class
+pub fn findLayerByClass(self: Map, class: []const u8) ?Layer {
+    var it = filterLayersByClass(self.layers.items, class);
+    return it.next();
+}
+
+/// Finds all layers by class, appending them to the provided list
+pub fn findLayersByClass(self: Map, allocator: Allocator, class: []const u8, out: *std.ArrayList(Layer)) !void {
+    var it = filterLayersByClass(self.layers.items, class);
+    while (it.next()) |layer| {
+        try out.append(allocator, layer);
+    }
+}
+
+fn filterLayersByClass(layers: []const Layer, class: []const u8) FilterLayersByClass {
+    return .{ .layers = layers, .class = class };
+}
+
+const FilterLayersByClass = struct {
+    layers: []const Layer,
+    class: []const u8,
+    index: usize = 0,
+
+    fn next(self: *FilterLayersByClass) ?Layer {
+        while (self.index < self.layers.len) {
+            const layer = self.layers[self.index];
+            self.index += 1;
+            if (layer.class) |layer_class| {
+                if (std.mem.eql(u8, layer_class, self.class)) {
+                    return layer;
+                }
+            }
+        }
+        return null;
+    }
+};
+
 pub fn pixelWidth(self: Map) u32 {
     return self.width * self.tile_width;
 }

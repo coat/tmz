@@ -132,6 +132,45 @@ test "findObject" {
     try expectEqual(null, map.findObject("non_existent"));
 }
 
+test "findLayerByClass" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+    const test_map = @embedFile("map.tmj");
+
+    var map = try Map.initFromSlice(allocator, test_map);
+    defer map.deinit(allocator);
+
+    const layer = map.findLayerByClass("bar").?;
+    try expectEqualStrings("Tile Layer 1", layer.name);
+    try expectEqualStrings("bar", layer.class.?);
+
+    try expectEqual(null, map.findLayerByClass("non_existent"));
+}
+
+test "findLayersByClass" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+    const test_map = @embedFile("map.tmj");
+
+    var map = try Map.initFromSlice(allocator, test_map);
+    defer map.deinit(allocator);
+
+    var results: std.ArrayList(tmz.Layer) = .empty;
+    defer results.deinit(allocator);
+
+    try map.findLayersByClass(allocator, "bar", &results);
+    try expectEqual(1, results.items.len);
+    try expectEqualStrings("Tile Layer 1", results.items[0].name);
+
+    var no_results: std.ArrayList(tmz.Layer) = .empty;
+    defer no_results.deinit(allocator);
+
+    try map.findLayersByClass(allocator, "non_existent", &no_results);
+    try expectEqual(0, no_results.items.len);
+}
+
 const tmz = @import("tmz");
 const Map = tmz.Map;
 
