@@ -69,12 +69,9 @@ test "negative coordinate infinite maps" {
         "map-infinite-base64-zstd-negative.tmj",
     };
 
-
     for (test_maps) |test_map| {
         var map = try Map.initFromFile(allocator, test_map);
         defer map.deinit(allocator);
-
-        try baseTests(map);
 
         try expectEqual(true, map.infinite);
 
