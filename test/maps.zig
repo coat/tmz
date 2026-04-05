@@ -59,6 +59,34 @@ test "infinite maps" {
     }
 }
 
+test "negative coordinate infinite maps" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+
+    const test_maps = [_][]const u8{
+        "map-infinite-csv-negative.tmj",
+        "map-infinite-base64-zstd-negative.tmj",
+    };
+
+
+    for (test_maps) |test_map| {
+        var map = try Map.initFromFile(allocator, test_map);
+        defer map.deinit(allocator);
+
+        try baseTests(map);
+
+        try expectEqual(true, map.infinite);
+
+        const layer = map.layers_by_name.get("ground").?;
+        const chunks = layer.content.tile_layer.chunks.?;
+        try expectEqual(2, chunks.len);
+        try expectEqual(7, chunks[1].data[0]);
+        try expectEqual(0, chunks[0].data[0]);
+        try expectEqual(4, chunks[0].data[chunks[0].data.len - 1]);
+    }
+}
+
 fn infiniteMapTests(map: Map) !void {
     try baseTests(map);
 

@@ -285,8 +285,8 @@ pub const Chunk = struct {
     data: []u32,
     height: u32,
     width: u32,
-    x: u32,
-    y: u32,
+    x: i32,
+    y: i32,
 
     /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#chunk
     pub const JsonChunk = struct {
@@ -294,8 +294,8 @@ pub const Chunk = struct {
         data: EncodedData,
         height: u32,
         width: u32,
-        x: u32,
-        y: u32,
+        x: i32,
+        y: i32,
 
         const EncodedData = union(Layer.JsonLayer.Encoding) {
             csv: []u32,
@@ -306,8 +306,8 @@ pub const Chunk = struct {
             var chunk: JsonChunk = .{
                 .height = try innerParseFromValue(u32, allocator, source.object.get("height").?, options),
                 .width = try innerParseFromValue(u32, allocator, source.object.get("width").?, options),
-                .x = try innerParseFromValue(u32, allocator, source.object.get("x").?, options),
-                .y = try innerParseFromValue(u32, allocator, source.object.get("y").?, options),
+                .x = try innerParseFromValue(i32, allocator, source.object.get("x").?, options),
+                .y = try innerParseFromValue(i32, allocator, source.object.get("y").?, options),
                 .data = undefined,
             };
 
