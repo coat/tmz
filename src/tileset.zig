@@ -10,7 +10,7 @@ pub const Tileset = struct {
     tiles: std.AutoHashMapUnmanaged(u32, Tile),
     properties: std.StringHashMapUnmanaged(Property),
 
-    pub fn initFromSlice(allocator: Allocator, json: []const u8) !Tileset {
+    pub fn initFromSlice(io: Io, allocator: Allocator, json: []const u8) !Tileset {
         var arena_state = std.heap.ArenaAllocator.init(allocator);
         defer arena_state.deinit();
         const arena = arena_state.allocator();
@@ -29,12 +29,12 @@ pub const Tileset = struct {
             .{ .ignore_unknown_fields = true },
         );
 
-        return try fromJson(allocator, json_tileset);
+        return try fromJson(io, allocator, json_tileset);
     }
 
-    pub fn fromJson(allocator: Allocator, json_tileset: JsonTileset) !Tileset {
+    pub fn fromJson(io: Io, allocator: Allocator, json_tileset: JsonTileset) !Tileset {
         if (json_tileset.source) |source| {
-            var source_tileset = try initFromFile(allocator, source);
+            var source_tileset = try initFromFile(io, allocator, source);
             source_tileset.first_gid = json_tileset.firstgid orelse 1;
 
             return source_tileset;
@@ -103,13 +103,13 @@ pub const Tileset = struct {
         return tileset;
     }
 
-    pub fn initFromFile(allocator: Allocator, path: []const u8) anyerror!Tileset {
-        const file = try std.fs.cwd().openFile(path, .{});
-        defer file.close();
+    pub fn initFromFile(io: Io, allocator: Allocator, path: []const u8) anyerror!Tileset {
+        const file = try Io.Dir.cwd().openFile(io, path, .{});
+        defer file.close(io);
 
-        var reader: std.fs.File.Reader = .initStreaming(file, &.{});
+        var reader = file.readerStreaming(io, &.{});
 
-        var out: std.Io.Writer.Allocating = .init(allocator);
+        var out: Io.Writer.Allocating = .init(allocator);
         defer out.deinit();
 
         _ = try reader.interface.streamRemaining(&out.writer);
@@ -117,7 +117,7 @@ pub const Tileset = struct {
         const json = try out.toOwnedSlice();
         defer allocator.free(json);
 
-        return initFromSlice(allocator, json);
+        return initFromSlice(io, allocator, json);
     }
 
     pub fn deinit(self: *Tileset, allocator: Allocator) void {
@@ -200,5 +200,6 @@ pub const Frame = struct {
 const Property = @import("Property.zig");
 
 const std = @import("std");
+const Io = std.Io;
 const Allocator = std.mem.Allocator;
 const innerParseFromValue = std.json.innerParseFromValue;

@@ -28,7 +28,7 @@ pub const Object = struct {
         text,
     };
 
-    pub fn fromJson(allocator: Allocator, json_obj: JsonObject) !Object {
+    pub fn fromJson(io: Io, allocator: Allocator, json_obj: JsonObject) !Object {
         var properties: std.StringHashMapUnmanaged(Property) = .empty;
         var json_object = json_obj;
 
@@ -37,12 +37,12 @@ pub const Object = struct {
             defer arena.deinit();
             const arena_allocator = arena.allocator();
 
-            const file = try std.fs.cwd().openFile(template, .{});
-            defer file.close();
+            const file = try Io.Dir.cwd().openFile(io, template, .{});
+            defer file.close(io);
 
-            var reader: std.fs.File.Reader = .initStreaming(file, &.{});
+            var reader = file.readerStreaming(io, &.{});
 
-            var out: std.Io.Writer.Allocating = .init(arena_allocator);
+            var out: Io.Writer.Allocating = .init(arena_allocator);
             defer out.deinit();
 
             _ = try reader.interface.streamRemaining(&out.writer);
@@ -190,4 +190,5 @@ pub const Text = struct {
 const Property = @import("root.zig").Property;
 
 const std = @import("std");
+const Io = std.Io;
 const Allocator = std.mem.Allocator;

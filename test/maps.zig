@@ -4,8 +4,9 @@ test "initFromSlice" {
     const test_map = @embedFile("map.tmj");
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
 
-    var map = try Map.initFromSlice(allocator, test_map);
+    var map = try Map.initFromSlice(io, allocator, test_map);
     defer map.deinit(allocator);
 
     try baseTests(map);
@@ -26,7 +27,7 @@ test "initFromFile" {
     };
 
     for (test_maps) |test_map| {
-        var map = try Map.initFromFile(allocator, test_map);
+        var map = try Map.initFromFile(std.testing.io, allocator, test_map);
         defer map.deinit(allocator);
 
         try regularMapTests(map);
@@ -46,6 +47,7 @@ test "infinite maps" {
     try changeTestDir();
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
 
     const test_maps = [_][]const u8{
         "map-infinite-csv.tmj",
@@ -53,7 +55,7 @@ test "infinite maps" {
     };
 
     for (test_maps) |test_map| {
-        var map = try Map.initFromFile(allocator, test_map);
+        var map = try Map.initFromFile(io, allocator, test_map);
         defer map.deinit(allocator);
 
         try infiniteMapTests(map);
@@ -71,7 +73,7 @@ test "negative coordinate infinite maps" {
     };
 
     for (test_maps) |test_map| {
-        var map = try Map.initFromFile(allocator, test_map);
+        var map = try Map.initFromFile(std.testing.io, allocator, test_map);
         defer map.deinit(allocator);
 
         try expectEqual(true, map.infinite);
@@ -173,7 +175,7 @@ test "getTile with multiple tilesets" {
     const allocator = std.testing.allocator;
     const test_map = @embedFile("map.tmj");
 
-    var map = try Map.initFromSlice(allocator, test_map);
+    var map = try Map.initFromSlice(std.testing.io, allocator, test_map);
     defer map.deinit(allocator);
 
     try expectEqual(null, map.getTile(0));
@@ -193,9 +195,10 @@ test "findObject" {
     try changeTestDir();
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
     const test_map = @embedFile("map.tmj");
 
-    var map = try Map.initFromSlice(allocator, test_map);
+    var map = try Map.initFromSlice(io, allocator, test_map);
     defer map.deinit(allocator);
 
     const object = map.findObject("hello").?;
@@ -210,9 +213,10 @@ test "findLayerByClass" {
     try changeTestDir();
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
     const test_map = @embedFile("map.tmj");
 
-    var map = try Map.initFromSlice(allocator, test_map);
+    var map = try Map.initFromSlice(io, allocator, test_map);
     defer map.deinit(allocator);
 
     const layer = map.findLayerByClass("bar").?;
@@ -229,9 +233,10 @@ test "findLayersByClass" {
     try changeTestDir();
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
     const test_map = @embedFile("map.tmj");
 
-    var map = try Map.initFromSlice(allocator, test_map);
+    var map = try Map.initFromSlice(io, allocator, test_map);
     defer map.deinit(allocator);
 
     var results: std.ArrayList(tmz.Layer) = .empty;
