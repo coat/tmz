@@ -357,136 +357,6 @@ pub const Chunk = struct {
     }
 };
 
-/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#object
-pub const Object = struct {
-    gid: ?u32 = null,
-    height: f32,
-    id: u32,
-    name: []const u8,
-    point: ?bool = null,
-    polygon: ?[]Point = null,
-    polyline: ?[]Point = null,
-    properties: std.StringHashMapUnmanaged(Property),
-    rotation: f32,
-    template: ?[]const u8 = null,
-    text: ?Text = null,
-    class: ?[]const u8 = null,
-    visible: bool,
-    width: f32,
-    x: f32,
-    y: f32,
-
-    type: Type,
-
-    pub const Type = enum {
-        rectangle,
-        ellipse,
-        polygon,
-        polyline,
-        tile,
-        text,
-    };
-
-    pub fn fromJson(allocator: Allocator, json_object: JsonObject) !Object {
-        var properties: std.StringHashMapUnmanaged(Property) = .empty;
-
-        if (json_object.properties) |props| {
-            for (props) |property| {
-                const prop = try Property.fromJson(allocator, property);
-                try properties.put(allocator, prop.name, prop);
-            }
-        }
-
-        const object: Object = .{
-            .gid = json_object.gid,
-            .height = json_object.height,
-            .id = json_object.id,
-            .name = try allocator.dupe(u8, json_object.name),
-            .point = json_object.point,
-            .class = if (json_object.type) |class| try allocator.dupe(u8, class) else null,
-            .rotation = json_object.rotation,
-            .visible = json_object.visible,
-            .width = json_object.width,
-            .x = json_object.x,
-            .y = json_object.y,
-            .properties = properties,
-
-            .type = set_type: {
-                if (json_object.gid) |_| {
-                    break :set_type .tile;
-                }
-                if (json_object.ellipse) |_| {
-                    break :set_type .ellipse;
-                }
-                if (json_object.polygon) |_| {
-                    break :set_type .polygon;
-                }
-                if (json_object.polyline) |_| {
-                    break :set_type .polyline;
-                }
-                if (json_object.text) |_| {
-                    break :set_type .text;
-                }
-                break :set_type .rectangle;
-            },
-        };
-        return object;
-    }
-
-    pub fn deinit(self: *Object, allocator: Allocator) void {
-        allocator.free(self.name);
-        if (self.class) |class| allocator.free(class);
-
-        var properties_it = self.properties.valueIterator();
-        while (properties_it.next()) |value_ptr| {
-            value_ptr.*.deinit(allocator);
-        }
-        self.properties.deinit(allocator);
-    }
-
-    const JsonObject = struct {
-        ellipse: ?bool = null,
-        gid: ?u32 = null,
-        height: f32,
-        id: u32,
-        name: []const u8,
-        point: ?bool = null,
-        polygon: ?[]Point = null,
-        polyline: ?[]Point = null,
-        properties: ?[]Property = null,
-        rotation: f32,
-        template: ?[]const u8 = null,
-        text: ?Text = null,
-        type: ?[]const u8 = null,
-        visible: bool,
-        width: f32,
-        x: f32,
-        y: f32,
-    };
-};
-
-/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#point
-pub const Point = struct {
-    x: f32,
-    y: f32,
-};
-
-/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#text
-pub const Text = struct {
-    bold: ?bool = null,
-    color: ?[]const u8 = null,
-    fontfamily: []const u8 = "sans-serif",
-    halign: enum { center, right, justify, left } = .left,
-    italic: bool = false,
-    kerning: bool = true,
-    pixelsize: u32 = 16,
-    strikeout: bool = false,
-    text: []const u8,
-    underline: bool = false,
-    valign: enum { center, bottom, top } = .top,
-    wrap: bool = false,
-};
-
 // Decode base64 data (and optionally decompress) into a slice of u32 Global Tile Ids allocated on the heap, caller owns slice
 fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Compression) []u32 {
     // var arena = std.heap.ArenaAllocator.init(allocator);
@@ -552,6 +422,7 @@ fn decompress(allocator: Allocator, compressed: []const u8, compression: Compres
 const tmz = @import("root.zig");
 const Color = tmz.Color;
 const Property = tmz.Property;
+const Object = tmz.Object;
 
 const std = @import("std");
 const base64_decoder = std.base64.standard.Decoder;

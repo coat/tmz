@@ -1,6 +1,6 @@
 pub const Map = @import("Map.zig");
 pub const Layer = layer.Layer;
-pub const Object = layer.Object;
+pub const Object = @import("object.zig").Object;
 pub const Tileset = tileset.Tileset;
 pub const Tile = tileset.Tile;
 pub const Property = @import("Property.zig");
