@@ -1,0 +1,16 @@
+{
+  "object": {
+    "height": 50,
+    "id": 1,
+    "name": "base",
+    "rotation": 45.0,
+    "type": "",
+    "visible": false,
+    "width": 200,
+    "properties": [
+      {"name": "shared_key", "type": "string", "value": "from_template"},
+      {"name": "template_only", "type": "int", "value": 99}
+    ]
+  },
+  "type": "template"
+}
