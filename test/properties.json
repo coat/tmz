@@ -1,13 +1,11 @@
 [
   {
     "name": "name",
-    "propertytype": "",
     "type": "string",
     "value": "game"
   },
   {
     "name": "width",
-    "propertytype": "",
     "type": "int",
     "value": 640
   },

@@ -1,11 +1,14 @@
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
     const coverage = b.option(bool, "coverage", "Generate a coverage report with kcov") orelse false;
     const coverage_requested = coverage and b.graph.host.result.os.tag == .linux;
 
     const mod = b.addModule("tmz", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
+        .optimize = optimize,
     });
 
     const mod_tests = b.addTest(.{

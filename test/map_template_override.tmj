@@ -1,0 +1,38 @@
+{
+  "height": 10,
+  "width": 10,
+  "infinite": false,
+  "nextlayerid": 3,
+  "nextobjectid": 4,
+  "orientation": "orthogonal",
+  "tileheight": 16,
+  "tilewidth": 16,
+  "tiledversion": "1.12.1",
+  "version": "1.10",
+  "layers": [
+    {
+      "id": 2,
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "name": "Objects",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "objects": [
+        {
+          "id": 3,
+          "name": "override_test",
+          "template": "object_template_override.tj",
+          "x": 10.0,
+          "y": 20.0,
+          "visible": true,
+          "width": 150.0,
+          "properties": [
+            {"name": "shared_key", "type": "string", "value": "from_instance"}
+          ]
+        }
+      ]
+    }
+  ]
+}

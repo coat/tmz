@@ -1,0 +1,20 @@
+{
+  "object": {
+    "height": 84,
+    "id": 2,
+    "name": "oh",
+    "opacity": 1,
+    "properties": [
+      {
+        "name": "test",
+        "type": "bool",
+        "value": true
+      }
+    ],
+    "rotation": 0,
+    "type": "",
+    "visible": true,
+    "width": 100
+  },
+  "type": "template"
+}

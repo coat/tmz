@@ -1,6 +1,6 @@
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#property
 name: []const u8,
-property_type: ?[]const u8,
+property_type: ?[]const u8 = null,
 type: Type = .string,
 value: Value,
 

@@ -9,6 +9,7 @@ test "initFromSlice" {
     defer map.deinit(allocator);
 
     try baseTests(map);
+    try templateObjectTests(map);
 }
 
 test "initFromFile" {
@@ -138,6 +139,32 @@ fn baseTests(map: Map) !void {
     try expectEqualStrings("test_property", prop.name);
     try expectEqual(.string, prop.type);
     try expectEqualStrings("test_value", prop.value.string);
+}
+
+fn templateObjectTests(map: Map) !void {
+    const obj = map.findObject("template_instance").?;
+
+    // Instance overrides template's name "oh"
+    try expectEqualStrings("template_instance", obj.name);
+    // Instance width=80 overrides template width=100
+    try expectEqual(80.0, obj.width);
+    // height not in instance → inherited from template (84)
+    try expectEqual(84.0, obj.height);
+    // rotation not in instance → inherited from template (0)
+    try expectEqual(0.0, obj.rotation);
+    try expectEqual(true, obj.visible);
+    try expectEqual(246.0, obj.x);
+    try expectEqual(161.0, obj.y);
+    try expectEqual(.rectangle, obj.type);
+
+    // Both template and instance properties present
+    try expectEqual(2, obj.properties.size);
+    const template_prop = obj.properties.get("test").?;
+    try expectEqual(.bool, template_prop.type);
+    try expectEqual(true, template_prop.value.bool);
+    const instance_prop = obj.properties.get("instance_prop").?;
+    try expectEqual(.bool, instance_prop.type);
+    try expectEqual(true, instance_prop.value.bool);
 }
 
 test "findObject" {
