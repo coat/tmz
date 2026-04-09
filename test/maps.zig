@@ -38,7 +38,7 @@ fn regularMapTests(map: Map) !void {
 
     try expectEqual(false, map.infinite);
 
-    const layer = map.layers_by_name.get("Tile Layer 1").?;
+    const layer = map.findLayer("Tile Layer 1").?;
     try expectEqual(1, layer.content.tile_layer.data.items[0]);
 }
 
@@ -76,7 +76,7 @@ test "negative coordinate infinite maps" {
 
         try expectEqual(true, map.infinite);
 
-        const layer = map.layers_by_name.get("ground").?;
+        const layer = map.findLayer("ground").?;
         const chunks = layer.content.tile_layer.chunks.?;
         try expectEqual(2, chunks.len);
         try expectEqual(7, chunks[1].data[0]);
@@ -90,7 +90,7 @@ fn infiniteMapTests(map: Map) !void {
 
     try expectEqual(true, map.infinite);
 
-    const layer = map.layers_by_name.get("ground").?;
+    const layer = map.findLayer("ground").?;
     try expectEqual(7, layer.content.tile_layer.chunks.?[0].data[0]);
 }
 

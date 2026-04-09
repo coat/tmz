@@ -45,22 +45,22 @@ exe.root_module.addImport("tmz", tmz.module("tmz"));
 ### Maps
 
 ```zig
-const map = try tmz.Map.initFromFile(allocator, "map.tmj");
+var map = try tmz.Map.initFromFile(allocator, "map.tmj");
 defer map.deinit(allocator);
 
 std.debug.info("Map size: {d} x {d}\n", .{ map.width, map.height });
 
-const object = map.getObject("player");
+const object = map.findObject("player");
 if (object) |player| {
   std.debug.info("Player position: {d},{d}\n", .{ player.x, player.y });
 }
 
-const ground_layer = map.layers.get("ground");
+const ground_layer = map.findLayer("ground");
 if (ground_layer) |layer| {
   for (layer.content.data.items) |gid| {
     const tile = map.getTile(gid);
     if (tile) |t| {
-      drawTile(tile.image, tile.x, tile.y, tile.orientation);
+      drawTile(t.image, t.x, t.y, t.orientation);
     }
   }
 }
@@ -73,7 +73,7 @@ document.
 ### Tilesets
 
 ```zig
-const tileset = try tmz.Tileset.initFromSlice(allocator, @embedFile("tileset.tsj"));
+var tileset = try tmz.Tileset.initFromSlice(allocator, @embedFile("tileset.tsj"));
 defer tileset.deinit(allocator);
 
 if (tileset.name) |name| {

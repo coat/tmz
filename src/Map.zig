@@ -5,8 +5,7 @@ tile_height: u32,
 infinite: bool,
 orientation: Orientation,
 
-layers_by_name: std.StringHashMapUnmanaged(Layer),
-layers: std.ArrayList(Layer),
+layers: std.StringHashMapUnmanaged(Layer),
 properties: std.StringHashMapUnmanaged(Property),
 tilesets: std.ArrayList(Tileset),
 
@@ -35,7 +34,6 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
         .background_color = if (json_map.backgroundcolor) |color| color else null,
         .class = if (json_map.class) |c| try alloc.dupe(u8, c) else null,
         .tilesets = .empty,
-        .layers_by_name = .empty,
         .layers = .empty,
         .properties = .empty,
     };
@@ -50,8 +48,7 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
     if (json_map.layers) |json_layers| {
         for (json_layers) |json_layer| {
             const layer = try Layer.fromJson(alloc, json_layer);
-            try map.layers.append(alloc, layer);
-            try map.layers_by_name.put(alloc, layer.name, layer);
+            try map.layers.put(alloc, layer.name, layer);
         }
     }
 
@@ -85,12 +82,11 @@ pub fn initFromFile(allocator: Allocator, path: []const u8) !Map {
 pub fn deinit(self: *Map, allocator: Allocator) void {
     if (self.class) |class| allocator.free(class);
 
-    for (self.layers.items) |*layer| {
-        layer.deinit(allocator);
+    var layers_it = self.layers.valueIterator();
+    while (layers_it.next()) |layer| {
+        layer.*.deinit(allocator);
     }
     self.layers.deinit(allocator);
-
-    self.layers_by_name.deinit(allocator);
 
     for (self.tilesets.items) |*tileset| {
         tileset.deinit(allocator);
@@ -98,8 +94,8 @@ pub fn deinit(self: *Map, allocator: Allocator) void {
     self.tilesets.deinit(allocator);
 
     var properties_it = self.properties.valueIterator();
-    while (properties_it.next()) |value_ptr| {
-        value_ptr.*.deinit(allocator);
+    while (properties_it.next()) |prop| {
+        prop.*.deinit(allocator);
     }
     self.properties.deinit(allocator);
 }
@@ -119,7 +115,7 @@ pub fn getTile(self: Map, gid: u32) ?Tile {
 
 /// Finds first object
 pub fn findObjectByClass(self: Map, class: []const u8) ?Object {
-    var layer_it = self.layers_by_name.valueIterator();
+    var layer_it = self.layers.valueIterator();
     while (layer_it.next()) |layer| {
         if (layer.content == .object_group) {
             if (layer.content.object_group.getByClass(class)) |object| {
@@ -132,9 +128,8 @@ pub fn findObjectByClass(self: Map, class: []const u8) ?Object {
 
 /// Finds first object by name
 pub fn findObject(self: Map, name: []const u8) ?Object {
-    // var layer_it = self.layers_by_name.valueIterator();
-    // while (layer_it.next()) |layer| {
-    for (self.layers.items) |layer| {
+    var it = self.layers.valueIterator();
+    while (it.next()) |layer| {
         if (layer.content == .object_group) {
             if (layer.content.object_group.get(name)) |object| {
                 return object;
@@ -144,42 +139,31 @@ pub fn findObject(self: Map, name: []const u8) ?Object {
     return null;
 }
 
+/// Finds first layer by name
+pub fn findLayer(self: Map, name: []const u8) ?Layer {
+    return self.layers.get(name);
+}
+
 /// Finds first layer by class
 pub fn findLayerByClass(self: Map, class: []const u8) ?Layer {
-    var it = filterLayersByClass(self.layers.items, class);
-    return it.next();
+    var it = self.layers.valueIterator();
+    while (it.next()) |layer| {
+        if (layer.class) |layer_class| {
+            return if (std.mem.eql(u8, class, layer_class)) layer.* else null;
+        }
+    }
+    return null;
 }
 
 /// Finds all layers by class, appending them to the provided list
 pub fn findLayersByClass(self: Map, allocator: Allocator, class: []const u8, out: *std.ArrayList(Layer)) !void {
-    var it = filterLayersByClass(self.layers.items, class);
+    var it = self.layers.valueIterator();
     while (it.next()) |layer| {
-        try out.append(allocator, layer);
-    }
-}
-
-fn filterLayersByClass(layers: []const Layer, class: []const u8) FilterLayersByClass {
-    return .{ .layers = layers, .class = class };
-}
-
-const FilterLayersByClass = struct {
-    layers: []const Layer,
-    class: []const u8,
-    index: usize = 0,
-
-    fn next(self: *FilterLayersByClass) ?Layer {
-        while (self.index < self.layers.len) {
-            const layer = self.layers[self.index];
-            self.index += 1;
-            if (layer.class) |layer_class| {
-                if (std.mem.eql(u8, layer_class, self.class)) {
-                    return layer;
-                }
-            }
+        if (layer.class) |layer_class| {
+            if (std.mem.eql(u8, class, layer_class)) try out.append(allocator, layer.*);
         }
-        return null;
     }
-};
+}
 
 pub fn pixelWidth(self: Map) u32 {
     return self.width * self.tile_width;
