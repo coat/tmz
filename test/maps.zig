@@ -217,6 +217,9 @@ test "findLayerByClass" {
     try expectEqualStrings("Tile Layer 1", layer.name);
     try expectEqualStrings("bar", layer.class.?);
 
+    const obj_layer = map.findLayerByClass("objects_class").?;
+    try expectEqualStrings("Object Layer 1", obj_layer.name);
+
     try expectEqual(null, map.findLayerByClass("non_existent"));
 }
 

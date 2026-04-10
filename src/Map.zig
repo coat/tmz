@@ -150,7 +150,7 @@ pub fn findLayerByClass(self: Map, class: []const u8) ?Layer {
     var it = self.layers.valueIterator();
     while (it.next()) |layer| {
         if (layer.class) |layer_class| {
-            return if (std.mem.eql(u8, class, layer_class)) layer.* else null;
+            if (std.mem.eql(u8, class, layer_class)) return layer.*;
         }
     }
     return null;
