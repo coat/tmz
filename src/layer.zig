@@ -174,7 +174,7 @@ pub const Compression = enum {
 };
 
 pub const TileLayer = struct {
-    data: std.ArrayList(u32),
+    data: std.ArrayListUnmanaged(u32),
     chunks: ?[]Chunk = null,
 
     pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !TileLayer {
@@ -248,8 +248,48 @@ pub const ObjectGroup = struct {
         return null;
     }
 };
-pub const ImageLayer = struct {};
-pub const Group = struct {};
+pub const ImageLayer = struct {
+    image: []const u8,
+    repeat_x: bool,
+    repeat_y: bool,
+    transparent_color: ?Color = null,
+
+    pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !ImageLayer {
+        return .{
+            .image = try allocator.dupe(u8, json_layer.image orelse return error.MissingField),
+            .repeat_x = json_layer.repeatx orelse false,
+            .repeat_y = json_layer.repeaty orelse false,
+            .transparent_color = json_layer.transparentcolor,
+        };
+    }
+
+    pub fn deinit(self: *ImageLayer, allocator: Allocator) void {
+        allocator.free(self.image);
+    }
+};
+
+pub const Group = struct {
+    layers: std.StringHashMapUnmanaged(Layer),
+
+    pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) anyerror!Group {
+        var layers: std.StringHashMapUnmanaged(Layer) = .empty;
+        if (json_layer.layers) |json_layers| {
+            for (json_layers) |sub_layer| {
+                const l = try Layer.fromJson(allocator, sub_layer);
+                try layers.put(allocator, l.name, l);
+            }
+        }
+        return .{ .layers = layers };
+    }
+
+    pub fn deinit(self: *Group, allocator: Allocator) void {
+        var it = self.layers.valueIterator();
+        while (it.next()) |l| {
+            l.*.deinit(allocator);
+        }
+        self.layers.deinit(allocator);
+    }
+};
 
 pub const LayerContent = union(enum) {
     tile_layer: TileLayer,
@@ -258,25 +298,20 @@ pub const LayerContent = union(enum) {
     group: Group,
 
     pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !LayerContent {
-        switch (json_layer.type) {
-            .tilelayer => {
-                return .{
-                    .tile_layer = try TileLayer.fromJson(allocator, json_layer),
-                };
-            },
-            else => return .{ .object_group = try ObjectGroup.fromJson(allocator, json_layer) },
-        }
+        return switch (json_layer.type) {
+            .tilelayer => .{ .tile_layer = try TileLayer.fromJson(allocator, json_layer) },
+            .objectgroup => .{ .object_group = try ObjectGroup.fromJson(allocator, json_layer) },
+            .imagelayer => .{ .image_layer = try ImageLayer.fromJson(allocator, json_layer) },
+            .group => .{ .group = try Group.fromJson(allocator, json_layer) },
+        };
     }
 
     pub fn deinit(self: *LayerContent, allocator: Allocator) void {
         switch (self.*) {
-            .tile_layer => |*layer| {
-                layer.deinit(allocator);
-            },
-            .object_group => |*group| {
-                group.deinit(allocator);
-            },
-            else => {},
+            .tile_layer => |*layer| layer.deinit(allocator),
+            .object_group => |*og| og.deinit(allocator),
+            .image_layer => |*image| image.deinit(allocator),
+            .group => |*group| group.deinit(allocator),
         }
     }
 };

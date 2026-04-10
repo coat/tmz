@@ -50,6 +50,23 @@ test "object layer" {
     try expectEqual(null, object_group.get("nonexistent"));
 }
 
+test "image layer" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+    const test_map = @embedFile("map.tmj");
+
+    var map = try tmz.Map.initFromSlice(allocator, test_map);
+    defer map.deinit(allocator);
+
+    const layer = map.findLayer("Image Layer 1").?;
+    const image_layer = layer.content.image_layer;
+    try expectEqualStrings("", image_layer.image);
+    try expectEqual(false, image_layer.repeat_x);
+    try expectEqual(false, image_layer.repeat_y);
+    try expectEqual(null, image_layer.transparent_color);
+}
+
 test "Compression parses empty string as none" {
     const source: std.json.Value = .{ .string = "" };
     const compression = try Compression.jsonParseFromValue(std.testing.allocator, source, .{});
@@ -59,6 +76,8 @@ test "Compression parses empty string as none" {
 const tmz = @import("tmz");
 const Layer = tmz.Layer;
 const Compression = @import("tmz").layer.Compression;
+
+const changeTestDir = @import("tests.zig").changeTestDir;
 
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
