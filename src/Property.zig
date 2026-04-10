@@ -50,12 +50,12 @@ pub fn jsonParseFromValue(allocator: Allocator, source: std.json.Value, options:
         .type = property_type,
 
         .value = switch (property_type) {
-            .string => .{ .string = try innerParseFromValue([]const u8, allocator, value, options) },
-            .int => .{ .int = try innerParseFromValue(u32, allocator, value, options) },
-            .float => .{ .float = try innerParseFromValue(f32, allocator, value, options) },
-            .bool => .{ .bool = try innerParseFromValue(bool, allocator, value, options) },
-            .color => .{ .color = try innerParseFromValue(Color, allocator, value, options) },
-            .file => .{ .file = try innerParseFromValue([]const u8, allocator, value, options) },
+            inline else => |tag| @unionInit(Value, @tagName(tag), try innerParseFromValue(
+                @typeInfo(Value).@"union".fields[@intFromEnum(tag)].type,
+                allocator,
+                value,
+                options,
+            )),
         },
     };
 }
