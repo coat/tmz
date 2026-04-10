@@ -142,7 +142,8 @@ pub const Layer = struct {
                         const base64_data = try innerParseFromValue([]const u8, allocator, data, options);
                         const layer_size: usize = (layer.width orelse 0) * (layer.height orelse 0);
 
-                        layer.layer_data = parseBase64Data(allocator, base64_data, layer_size, layer.compression orelse .none);
+                        layer.layer_data = parseBase64Data(allocator, base64_data, layer_size, layer.compression orelse .none) catch
+                            return error.UnexpectedToken;
                     }
                 }
             }
@@ -334,7 +335,7 @@ pub const Chunk = struct {
                 switch (json_chunk.data) {
                     .csv => break :set_data json_chunk.data.csv,
                     .base64 => {
-                        const base64_data = parseBase64Data(arena, json_chunk.data.base64, json_chunk.width * json_chunk.height, compression);
+                        const base64_data = try parseBase64Data(arena, json_chunk.data.base64, json_chunk.width * json_chunk.height, compression);
 
                         break :set_data base64_data;
                     },
@@ -358,65 +359,57 @@ pub const Chunk = struct {
 };
 
 // Decode base64 data (and optionally decompress) into a slice of u32 Global Tile Ids allocated on the heap, caller owns slice
-fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Compression) []u32 {
-    // var arena = std.heap.ArenaAllocator.init(allocator);
-    // defer arena.deinit();
-    // const arena_allocator = arena.allocator();
+fn parseBase64Data(allocator: Allocator, base64_data: []const u8, size: usize, compression: Compression) ![]u32 {
+    const decoded_size = try base64_decoder.calcSizeForSlice(base64_data);
+    const base64_decoded = try allocator.alloc(u8, decoded_size);
+    defer allocator.free(base64_decoded);
 
-    const decoded_size = base64_decoder.calcSizeForSlice(base64_data) catch @panic("Unable to decode base64 data");
-    var decoded = allocator.alloc(u8, decoded_size) catch @panic("OOM");
-    defer allocator.free(decoded);
+    try base64_decoder.decode(base64_decoded, base64_data);
 
-    base64_decoder.decode(decoded, base64_data) catch @panic("Unable to decode base64 data");
+    const decoded = if (compression != .none)
+        try decompress(allocator, base64_decoded, compression)
+    else
+        base64_decoded;
+    defer if (compression != .none) allocator.free(decoded);
 
-    const data = allocator.alloc(u32, size) catch @panic("OOM");
+    const stride = @sizeOf(u32);
+    if (size * stride != decoded.len)
+        return error.DataSizeMismatch;
 
-    const alignment = @alignOf(u32);
-
-    if (compression != .none)
-        decoded = decompress(allocator, decoded, compression);
-
-    if (size * alignment != decoded.len)
-        @panic("data size does not match Layer dimensions");
+    const data = try allocator.alloc(u32, size);
 
     for (data, 0..) |*tile, i| {
-        const tile_index = i * alignment;
-        const end = tile_index + alignment;
-        tile.* = std.mem.readInt(u32, decoded[tile_index..end][0..alignment], .little);
+        const tile_index = i * stride;
+        tile.* = std.mem.readInt(u32, decoded[tile_index..][0..stride], .little);
     }
 
     return data;
 }
 
-// caller owns returned slice
-fn decompress(allocator: Allocator, compressed: []const u8, compression: Compression) []u8 {
+fn decompress(allocator: Allocator, compressed: []const u8, compression: Compression) ![]u8 {
     var out: std.Io.Writer.Allocating = .init(allocator);
-    defer out.deinit();
+    errdefer out.deinit();
 
     var compressed_reader: std.Io.Reader = .fixed(compressed);
 
-    return switch (compression) {
-        .gzip => {
-            var decompresser: std.compress.flate.Decompress = .init(&compressed_reader, .gzip, &.{});
-            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress gzip");
-
-            return out.toOwnedSlice() catch @panic("OOM");
-        },
-        .zlib => {
-            var decompresser: std.compress.flate.Decompress = .init(&compressed_reader, .zlib, &.{});
-            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress zlib");
-
-            return out.toOwnedSlice() catch @panic("OOM");
+    switch (compression) {
+        .gzip, .zlib => {
+            const format: std.compress.flate.Container = switch (compression) {
+                .gzip => .gzip,
+                .zlib => .zlib,
+                else => unreachable,
+            };
+            var decompresser: std.compress.flate.Decompress = .init(&compressed_reader, format, &.{});
+            _ = try decompresser.reader.streamRemaining(&out.writer);
         },
         .zstd => {
             var decompresser: std.compress.zstd.Decompress = .init(&compressed_reader, &.{}, .{});
-
-            _ = decompresser.reader.streamRemaining(&out.writer) catch @panic("Unable to decompress zstd");
-
-            return out.toOwnedSlice() catch @panic("OOM");
+            _ = try decompresser.reader.streamRemaining(&out.writer);
         },
-        .none => return @constCast(compressed),
-    };
+        .none => unreachable,
+    }
+
+    return try out.toOwnedSlice();
 }
 
 const tmz = @import("root.zig");
