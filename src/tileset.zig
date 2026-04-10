@@ -78,8 +78,6 @@ pub const Tileset = struct {
                         .id = tile_id,
                         .x = tile_x,
                         .y = tile_y,
-
-                        .tileset = tileset,
                     };
                 }
             };
@@ -161,7 +159,6 @@ pub const Tile = struct {
     width: u32 = 0,
     height: u32 = 0,
     animation: ?[]const Frame = null,
-    tileset: Tileset,
 
     pub const JsonTile = struct {
         id: u32,
@@ -180,7 +177,6 @@ pub const Tile = struct {
             .width = json_tile.width orelse tileset.tile_width,
             .height = json_tile.height orelse tileset.tile_height,
             .animation = if (json_tile.animation) |animation| try allocator.dupe(Frame, animation) else null,
-            .tileset = tileset,
         };
     }
 
@@ -192,7 +188,6 @@ pub const Tile = struct {
         return .{
             .id = try innerParseFromValue(u32, allocator, source.object.get("id").?, options),
             .animation = if (source.object.get("animation")) |animation| try innerParseFromValue([]const Frame, allocator, animation, options) else null,
-            .tileset = undefined,
         };
     }
 };

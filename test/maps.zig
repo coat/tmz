@@ -116,18 +116,18 @@ fn baseTests(map: Map) !void {
     try expectEqual(null, bad_tile);
 
     const foo = map.getTile(2).?;
-    try expectEqual(2 - tileset.first_gid, foo.id);
-    try expectEqual(16, foo.x);
-    try expectEqual(0, foo.y);
+    try expectEqual(2 - tileset.first_gid, foo.tile.id);
+    try expectEqual(16, foo.tile.x);
+    try expectEqual(0, foo.tile.y);
 
-    const tile = map.getTile(4).?;
-    try expectEqual(3, tile.id);
-    try expectEqual(16, tile.x);
-    try expectEqual(16, tile.y);
-    try expectEqual(16, tile.width);
-    try expectEqual(16, tile.height);
+    const result = map.getTile(4).?;
+    try expectEqual(3, result.tile.id);
+    try expectEqual(16, result.tile.x);
+    try expectEqual(16, result.tile.y);
+    try expectEqual(16, result.tile.width);
+    try expectEqual(16, result.tile.height);
 
-    try expectEqual(tileset.first_gid, tile.tileset.first_gid);
+    try expectEqual(tileset.first_gid, result.tileset.first_gid);
 
     try expectEqual(480, map.pixelWidth());
     try expectEqual(480, map.pixelHeight());
@@ -179,10 +179,12 @@ test "getTile with multiple tilesets" {
     try expectEqual(null, map.getTile(0));
 
     const tile_from_first = map.getTile(2).?;
-    try expectEqual(1, tile_from_first.id);
+    try expectEqual(1, tile_from_first.tile.id);
+    try expectEqual(1, tile_from_first.tileset.first_gid);
 
     const tile_from_second = map.getTile(5).?;
-    try expectEqual(0, tile_from_second.id);
+    try expectEqual(0, tile_from_second.tile.id);
+    try expectEqual(5, tile_from_second.tileset.first_gid);
 
     try expectEqual(null, map.getTile(9999));
 }

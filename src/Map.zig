@@ -100,7 +100,12 @@ pub fn deinit(self: *Map, allocator: Allocator) void {
     self.properties.deinit(allocator);
 }
 
-pub fn getTile(self: Map, gid: u32) ?Tile {
+pub const TileResult = struct {
+    tile: Tile,
+    tileset: Tileset,
+};
+
+pub fn getTile(self: Map, gid: u32) ?TileResult {
     if (gid == 0) return null;
 
     var i = self.tilesets.items.len;
@@ -108,7 +113,8 @@ pub fn getTile(self: Map, gid: u32) ?Tile {
         i -= 1;
         const tileset = self.tilesets.items[i];
         if (tileset.first_gid <= gid) {
-            return tileset.tiles.get(gid - tileset.first_gid);
+            const tile = tileset.tiles.get(gid - tileset.first_gid) orelse return null;
+            return .{ .tile = tile, .tileset = tileset };
         }
     }
     return null;
