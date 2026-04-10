@@ -103,8 +103,9 @@ pub fn deinit(self: *Map, allocator: Allocator) void {
 pub fn getTile(self: Map, gid: u32) ?Tile {
     if (gid == 0) return null;
 
-    var i = self.tilesets.items.len - 1;
-    while (i >= 0) : (i -= 1) {
+    var i = self.tilesets.items.len;
+    while (i > 0) {
+        i -= 1;
         const tileset = self.tilesets.items[i];
         if (tileset.first_gid <= gid) {
             return tileset.tiles.get(gid - tileset.first_gid);

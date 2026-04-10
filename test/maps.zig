@@ -167,6 +167,26 @@ fn templateObjectTests(map: Map) !void {
     try expectEqual(true, instance_prop.value.bool);
 }
 
+test "getTile with multiple tilesets" {
+    try changeTestDir();
+
+    const allocator = std.testing.allocator;
+    const test_map = @embedFile("map.tmj");
+
+    var map = try Map.initFromSlice(allocator, test_map);
+    defer map.deinit(allocator);
+
+    try expectEqual(null, map.getTile(0));
+
+    const tile_from_first = map.getTile(2).?;
+    try expectEqual(1, tile_from_first.id);
+
+    const tile_from_second = map.getTile(5).?;
+    try expectEqual(0, tile_from_second.id);
+
+    try expectEqual(null, map.getTile(9999));
+}
+
 test "findObject" {
     try changeTestDir();
 
