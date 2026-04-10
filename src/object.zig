@@ -148,19 +148,19 @@ pub const Object = struct {
         y: ?f32 = null,
 
         pub fn applyTemplate(self: *JsonObject, template: JsonObject) void {
-            if (self.ellipse == null) self.ellipse = if (template.ellipse) |ellipse| ellipse else null;
-            if (self.id == null) self.id = if (template.id) |id| id else null;
-            if (self.gid == null) self.gid = if (template.gid) |gid| gid else null;
-            if (self.height == null) self.height = if (template.height) |height| height else null;
-            if (self.opacity == null) self.opacity = if (template.opacity) |opacity| opacity else null;
-            if (self.point == null) self.point = if (template.point) |point| point else null;
-            if (self.polygon == null) self.polygon = if (template.polygon) |polygon| polygon else null;
-            if (self.polyline == null) self.polyline = if (template.polyline) |polyline| polyline else null;
-            if (self.rotation == null) self.rotation = if (template.rotation) |rotation| rotation else null;
-            if (self.text == null) self.text = if (template.text) |text| text else null;
-            if (self.type == null) self.type = if (template.type) |t| t else null;
-            if (self.visible == null) self.visible = if (template.visible) |visible| visible else null;
-            if (self.width == null) self.width = if (template.width) |width| width else null;
+            self.ellipse = self.ellipse orelse template.ellipse;
+            self.id = self.id orelse template.id;
+            self.gid = self.gid orelse template.gid;
+            self.height = self.height orelse template.height;
+            self.opacity = self.opacity orelse template.opacity;
+            self.point = self.point orelse template.point;
+            self.polygon = self.polygon orelse template.polygon;
+            self.polyline = self.polyline orelse template.polyline;
+            self.rotation = self.rotation orelse template.rotation;
+            self.text = self.text orelse template.text;
+            self.type = self.type orelse template.type;
+            self.visible = self.visible orelse template.visible;
+            self.width = self.width orelse template.width;
         }
     };
 };
