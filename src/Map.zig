@@ -7,7 +7,7 @@ orientation: Orientation,
 
 layers: std.StringHashMapUnmanaged(Layer),
 properties: std.StringHashMapUnmanaged(Property),
-tilesets: std.ArrayListUnmanaged(Tileset),
+tilesets: std.ArrayList(Tileset),
 
 background_color: ?Color = null,
 class: ?[]const u8,

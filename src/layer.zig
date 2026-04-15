@@ -174,7 +174,7 @@ pub const Compression = enum {
 };
 
 pub const TileLayer = struct {
-    data: std.ArrayListUnmanaged(u32),
+    data: std.ArrayList(u32),
     chunks: ?[]Chunk = null,
 
     pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !TileLayer {
@@ -205,7 +205,7 @@ pub const TileLayer = struct {
 };
 
 pub const ObjectGroup = struct {
-    objects: std.ArrayListUnmanaged(Object),
+    objects: std.ArrayList(Object),
 
     pub fn fromJson(io: Io, allocator: Allocator, json_layer: Layer.JsonLayer) !ObjectGroup {
         var object_group: ObjectGroup = .{
