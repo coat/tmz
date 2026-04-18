@@ -22,7 +22,7 @@
           devShells.${system}.default = pkgs.mkShell {
             packages = with pkgs;
               [
-                zigpkgs.master
+                zigpkgs.default
               ]
               ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [kcov]);
           };
