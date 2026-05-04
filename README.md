@@ -6,10 +6,8 @@ A library for parsing [Tiled](https://www.mapeditor.org/) maps.
 const std = @import("std");
 const tmz = @import("tmz");
 
-pub fn main() !void {
-    const allocator = std.heap.smp_allocator;
-
-    const map = try tmz.Map.initFromFile(allocator, "map.tmj");
+pub fn main(init: std.process.Init) !void {
+    const map = try tmz.Map.initFromFile(init.io, init.gpa, "map.tmj");
     defer map.deinit();
 
     std.debug.info("Map size: {d} × {d}\n", .{ map.width, map.height });

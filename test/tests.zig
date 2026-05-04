@@ -7,15 +7,18 @@ comptime {
 }
 
 pub fn changeTestDir() !void {
-    const file_name = try std.fs.cwd().realpathAlloc(std.testing.allocator, ".");
+    const io = std.testing.io;
+
+    const file_name = try Io.Dir.cwd().realPathFileAlloc(io, ".", std.testing.allocator);
     defer std.testing.allocator.free(file_name);
 
     if (std.mem.endsWith(u8, file_name, "test")) return;
 
-    var dir = try std.fs.cwd().openDir("test", .{});
-    defer dir.close();
+    var dir = try Io.Dir.cwd().openDir(io, "test", .{});
+    defer dir.close(io);
 
-    try dir.setAsCwd();
+    try std.process.setCurrentDir(io, dir);
 }
 
 const std = @import("std");
+const Io = std.Io;

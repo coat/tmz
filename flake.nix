@@ -1,22 +1,28 @@
 {
   description = "A library for parsing Tiled maps";
 
-  inputs = {
-    nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
-  };
+  inputs.nixpkgs.url = "nixpkgs/nixos-25.11";
+  inputs.zig.url = "github:mitchellh/zig-overlay";
 
-  outputs = {nixpkgs, ...}: let
+  outputs = {
+    nixpkgs,
+    zig,
+    ...
+  }: let
     systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
   in
     builtins.foldl' nixpkgs.lib.recursiveUpdate {} (
       builtins.map (
         system: let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [zig.overlays.default];
+          };
         in {
           devShells.${system}.default = pkgs.mkShell {
             packages = with pkgs;
               [
-                zig
+                zigpkgs.default
               ]
               ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [kcov]);
           };

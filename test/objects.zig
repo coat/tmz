@@ -2,7 +2,7 @@ test "object template: instance overrides template fields and properties" {
     try changeTestDir();
     const allocator = std.testing.allocator;
 
-    var map = try Map.initFromFile(allocator, "map_template_override.tmj");
+    var map = try Map.initFromFile(std.testing.io, allocator, "map_template_override.tmj");
     defer map.deinit(allocator);
 
     const obj = map.findObject("override_test").?;

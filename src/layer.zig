@@ -6,7 +6,7 @@ pub const Layer = struct {
     class: ?[]const u8 = null,
     properties: std.StringHashMapUnmanaged(Property),
 
-    pub fn fromJson(allocator: Allocator, json_layer: JsonLayer) !Layer {
+    pub fn fromJson(io: Io, allocator: Allocator, json_layer: JsonLayer) !Layer {
         var properties: std.StringHashMapUnmanaged(Property) = .empty;
 
         if (json_layer.properties) |props| {
@@ -21,7 +21,7 @@ pub const Layer = struct {
             .id = json_layer.id,
             .name = try allocator.dupe(u8, json_layer.name),
             .visible = json_layer.visible,
-            .content = try LayerContent.fromJson(allocator, json_layer),
+            .content = try LayerContent.fromJson(io, allocator, json_layer),
             .properties = properties,
         };
     }
@@ -174,7 +174,7 @@ pub const Compression = enum {
 };
 
 pub const TileLayer = struct {
-    data: std.ArrayListUnmanaged(u32),
+    data: std.ArrayList(u32),
     chunks: ?[]Chunk = null,
 
     pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !TileLayer {
@@ -205,15 +205,15 @@ pub const TileLayer = struct {
 };
 
 pub const ObjectGroup = struct {
-    objects: std.ArrayListUnmanaged(Object),
+    objects: std.ArrayList(Object),
 
-    pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !ObjectGroup {
+    pub fn fromJson(io: Io, allocator: Allocator, json_layer: Layer.JsonLayer) !ObjectGroup {
         var object_group: ObjectGroup = .{
             .objects = .empty,
         };
         if (json_layer.objects) |json_objects| {
             for (json_objects) |json_object| {
-                const object = try Object.fromJson(allocator, json_object);
+                const object = try Object.fromJson(io, allocator, json_object);
                 try object_group.objects.append(allocator, object);
             }
         }
@@ -271,11 +271,11 @@ pub const ImageLayer = struct {
 pub const Group = struct {
     layers: std.StringHashMapUnmanaged(Layer),
 
-    pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) anyerror!Group {
+    pub fn fromJson(io: Io, allocator: Allocator, json_layer: Layer.JsonLayer) anyerror!Group {
         var layers: std.StringHashMapUnmanaged(Layer) = .empty;
         if (json_layer.layers) |json_layers| {
             for (json_layers) |sub_layer| {
-                const l = try Layer.fromJson(allocator, sub_layer);
+                const l = try Layer.fromJson(io, allocator, sub_layer);
                 try layers.put(allocator, l.name, l);
             }
         }
@@ -297,12 +297,12 @@ pub const LayerContent = union(enum) {
     image_layer: ImageLayer,
     group: Group,
 
-    pub fn fromJson(allocator: Allocator, json_layer: Layer.JsonLayer) !LayerContent {
+    pub fn fromJson(io: Io, allocator: Allocator, json_layer: Layer.JsonLayer) !LayerContent {
         return switch (json_layer.type) {
             .tilelayer => .{ .tile_layer = try TileLayer.fromJson(allocator, json_layer) },
-            .objectgroup => .{ .object_group = try ObjectGroup.fromJson(allocator, json_layer) },
+            .objectgroup => .{ .object_group = try ObjectGroup.fromJson(io, allocator, json_layer) },
             .imagelayer => .{ .image_layer = try ImageLayer.fromJson(allocator, json_layer) },
-            .group => .{ .group = try Group.fromJson(allocator, json_layer) },
+            .group => .{ .group = try Group.fromJson(io, allocator, json_layer) },
         };
     }
 
@@ -453,6 +453,7 @@ const Property = tmz.Property;
 const Object = tmz.Object;
 
 const std = @import("std");
+const Io = std.Io;
 const base64_decoder = std.base64.standard.Decoder;
 const ParseOptions = std.json.ParseOptions;
 const Value = std.json.Value;

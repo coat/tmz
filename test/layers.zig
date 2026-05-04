@@ -16,7 +16,7 @@ test "object layer" {
 
     try expectEqual(Layer.JsonLayer.DrawOrder.topdown, json_layer.draw_order);
 
-    var layer = try Layer.fromJson(allocator, json_layer);
+    var layer = try Layer.fromJson(std.testing.io, allocator, json_layer);
     defer layer.deinit(allocator);
 
     const object_group = layer.content.object_group;
@@ -56,7 +56,7 @@ test "image layer" {
     const allocator = std.testing.allocator;
     const test_map = @embedFile("map.tmj");
 
-    var map = try tmz.Map.initFromSlice(allocator, test_map);
+    var map = try tmz.Map.initFromSlice(std.testing.io, allocator, test_map);
     defer map.deinit(allocator);
 
     const layer = map.findLayer("Image Layer 1").?;

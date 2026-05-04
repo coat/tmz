@@ -4,8 +4,9 @@ test "initFromSlice" {
     const test_tileset = @embedFile("tileset.tsj");
 
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
 
-    var tileset = try Tileset.initFromSlice(allocator, test_tileset);
+    var tileset = try Tileset.initFromSlice(io, allocator, test_tileset);
     defer tileset.deinit(allocator);
 
     try tilesetTests(tileset);
@@ -16,7 +17,7 @@ test "initFromFile" {
 
     const allocator = std.testing.allocator;
 
-    var tileset = try Tileset.initFromFile(allocator, "tileset.tsj");
+    var tileset = try Tileset.initFromFile(std.testing.io, allocator, "tileset.tsj");
     defer tileset.deinit(allocator);
 
     try tilesetTests(tileset);

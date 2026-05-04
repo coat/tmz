@@ -7,14 +7,14 @@ orientation: Orientation,
 
 layers: std.StringHashMapUnmanaged(Layer),
 properties: std.StringHashMapUnmanaged(Property),
-tilesets: std.ArrayListUnmanaged(Tileset),
+tilesets: std.ArrayList(Tileset),
 
 background_color: ?Color = null,
 class: ?[]const u8,
 
 pub const Orientation = enum { orthogonal, isometric, staggered, hexagonal };
 
-pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
+pub fn initFromSlice(io: Io, alloc: Allocator, json: []const u8) !Map {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
     const arena_allocator = arena.allocator();
@@ -40,14 +40,14 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
 
     if (json_map.tilesets) |json_tilesets| {
         for (json_tilesets) |json_tileset| {
-            const tileset = try Tileset.fromJson(alloc, json_tileset);
+            const tileset = try Tileset.fromJson(io, alloc, json_tileset);
             try map.tilesets.append(alloc, tileset);
         }
     }
 
     if (json_map.layers) |json_layers| {
         for (json_layers) |json_layer| {
-            const layer = try Layer.fromJson(alloc, json_layer);
+            const layer = try Layer.fromJson(io, alloc, json_layer);
             try map.layers.put(alloc, layer.name, layer);
         }
     }
@@ -62,13 +62,13 @@ pub fn initFromSlice(alloc: Allocator, json: []const u8) !Map {
     return map;
 }
 
-pub fn initFromFile(allocator: Allocator, path: []const u8) !Map {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
+pub fn initFromFile(io: Io, allocator: Allocator, path: []const u8) !Map {
+    const file = try Io.Dir.cwd().openFile(io, path, .{});
+    defer file.close(io);
 
-    var reader: std.fs.File.Reader = .initStreaming(file, &.{});
+    var reader = file.readerStreaming(io, &.{});
 
-    var out: std.Io.Writer.Allocating = .init(allocator);
+    var out: Io.Writer.Allocating = .init(allocator);
     defer out.deinit();
 
     _ = try reader.interface.streamRemaining(&out.writer);
@@ -76,7 +76,7 @@ pub fn initFromFile(allocator: Allocator, path: []const u8) !Map {
     const json = try out.toOwnedSlice();
     defer allocator.free(json);
 
-    return initFromSlice(allocator, json);
+    return initFromSlice(io, allocator, json);
 }
 
 pub fn deinit(self: *Map, allocator: Allocator) void {
@@ -257,5 +257,6 @@ const Tile = tmz.Tile;
 const Property = tmz.Property;
 
 const std = @import("std");
+const Io = std.Io;
 const innerParseFromValue = std.json.innerParseFromValue;
 const Allocator = std.mem.Allocator;
