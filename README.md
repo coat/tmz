@@ -27,7 +27,7 @@ Format](https://doc.mapeditor.org/en/stable/reference/json-map-format/) -
 1. Add `tmz` as a dependency in your `build.zig.zon`:
 
 ```bash
-zig fetch --save git+https://github.com/coat/tmz.git
+zig fetch --save git+https://codeberg.org/sadbeast/tmz.git
 ```
 
 2. Add module to `build.zig`:
@@ -43,7 +43,7 @@ exe.root_module.addImport("tmz", tmz.module("tmz"));
 ### Maps
 
 ```zig
-var map = try tmz.Map.initFromFile(allocator, "map.tmj");
+var map = try tmz.Map.initFromFile(io, allocator, "map.tmj");
 defer map.deinit(allocator);
 
 std.debug.info("Map size: {d} x {d}\n", .{ map.width, map.height });
@@ -83,14 +83,12 @@ if (tileset.name) |name| {
 (.tsj)](https://doc.mapeditor.org/en/stable/reference/json-map-format/#tileset)
 document.
 
+An `Io` instance is used for loading files (tilesets, templates, etc.).
+
 ## Building
 
 Building the library requires [Zig
-0.15.1](https://ziglang.org/download/#release-0.15.1).
-
-`zig build install` will build the full library and output a FHS-compatible
-directory in zig-out. You can customize the output directory with the --prefix
-flag.
+0.16.0](https://ziglang.org/download/#release-0.16.0).
 
 ### Development Environment
 
