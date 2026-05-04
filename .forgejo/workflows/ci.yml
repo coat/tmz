@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+    runs-on: nixos
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Run our checks to catch quick issues
+      - run: nix flake check
+
+      - run: nix develop -c zig env
+
+      - name: Run tests
+        run: nix develop -c zig build test -Dtarget=-Dtarget=x86_64-linux --summary all
+
+  coverage:
+    runs-on: nixos
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Run our checks to catch quick issues
+      - run: nix flake check
+
+      - run: nix develop -c zig env
+
+      - name: Run tests with coverage
+        run: nix develop -c zig build test -Dcoverage -Dtarget=x86_64-linux --summary all
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          directory: zig-out/coverage
+          fail_ci_if_error: false
+          verbose: true
